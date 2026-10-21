@@ -168,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Alumni Network • Cultores Mentium',
+                        'Old Boys Network • Cultores Mentium',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
@@ -320,8 +320,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           validator: (v) {
                             if (!_isSignUp) return null;
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return 'Required';
+                            }
                             final parsed = int.tryParse(v);
                             if (parsed == null ||
                                 parsed < 1920 ||
@@ -343,8 +344,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           prefixIcon: Icon(Icons.mail_outline, size: 20),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return 'Email is required';
+                          }
                           if (!v.contains('@') || !v.contains('.')) {
                             return 'Enter a valid email';
                           }
@@ -374,8 +376,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty)
+                          if (v == null || v.isEmpty) {
                             return 'Password is required';
+                          }
                           if (_isSignUp && v.length < 6) {
                             return 'Password must be at least 6 characters';
                           }
@@ -423,7 +426,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       Text(
                         _isSignUp
                             ? 'Your email will be auto-matched with pre-registered Waitaki Old Boys records.'
-                            : 'Exclusively for alumni and staff of Waitaki Boys\' High School.',
+                            : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 12,

@@ -8,7 +8,7 @@ import '../../models/connection.dart';
 import '../../models/profile.dart';
 import '../../services/directory_service.dart';
 import '../../services/supabase_service.dart';
-import 'widgets/alumni_card.dart';
+import 'widgets/old_boy_card.dart';
 
 class DirectoryScreen extends StatefulWidget {
   const DirectoryScreen({super.key});
@@ -21,7 +21,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
   final _directoryService = DirectoryService();
   final _searchController = TextEditingController();
 
-  List<Profile> _alumni = [];
+  List<Profile> _oldBoys = [];
   Map<String, Connection> _myConnections = {};
   final Set<String> _connectingIds = {};
 
@@ -58,7 +58,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
 
     try {
       final results = await Future.wait([
-        _directoryService.searchAlumni(
+        _directoryService.searchOldBoys(
           query: _searchController.text.trim(),
           gradYear: _selectedGradYear,
         ),
@@ -67,7 +67,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
 
       if (mounted) {
         setState(() {
-          _alumni = results[0] as List<Profile>;
+          _oldBoys = results[0] as List<Profile>;
           _myConnections = results[1] as Map<String, Connection>;
           _isLoading = false;
         });
@@ -116,7 +116,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Alumni Directory',
+          'Old Boys Directory',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
@@ -171,7 +171,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
               ),
               const Divider(height: 1),
 
-              // Alumni List
+              // Old Boys List
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _loadDirectory,
@@ -205,32 +205,52 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                             ),
                           ),
                         )
-                      : _alumni.isEmpty
+                      : _oldBoys.isEmpty
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(
-                                Icons.people_outline,
-                                size: 48,
-                                color: AppColors.textMuted,
-                              ),
-                              SizedBox(height: 14),
-                              Text(
-                                'No alumni found matching your search.',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 15,
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.people_outline,
+                                  size: 48,
+                                  color: AppColors.textMuted,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 14),
+                                Text(
+                                  _searchController.text.isNotEmpty ||
+                                          _selectedGradYear != null
+                                      ? 'No Old Boys found matching your search.'
+                                      : 'No registered Old Boys yet.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (_searchController.text.isEmpty &&
+                                    _selectedGradYear == null) ...[
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    'As Old Boys create accounts on the network, they will appear here.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
-                          itemCount: _alumni.length,
+                          itemCount: _oldBoys.length,
                           itemBuilder: (context, index) {
-                            final profile = _alumni[index];
+                            final profile = _oldBoys[index];
                             final profileKey = profile.userId ?? profile.id;
                             final isSelf =
                                 profileKey == currentUserId ||
@@ -241,7 +261,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                             final status =
                                 conn?.status ?? ConnectionStatus.none;
 
-                            return AlumniCard(
+                            return OldBoyCard(
                               profile: profile,
                               connectionStatus: status,
                               isSelf: isSelf,

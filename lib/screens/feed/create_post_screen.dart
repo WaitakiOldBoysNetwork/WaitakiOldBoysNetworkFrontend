@@ -207,7 +207,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Shared to Waitaki Alumni Network',
+                                    'Shared to Waitaki Old Boys Network',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: AppColors.textMuted,

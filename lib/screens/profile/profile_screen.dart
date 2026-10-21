@@ -297,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Row(
                                     children: [
                                       Text(
-                                        profile?.fullName ?? 'Alumni Member',
+                                        profile?.fullName ?? 'Old Boy',
                                         style: const TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w800,

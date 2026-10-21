@@ -108,7 +108,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   ),
                 ),
                 Text(
-                  'Alumni Feed',
+                  'Old Boys Feed',
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,

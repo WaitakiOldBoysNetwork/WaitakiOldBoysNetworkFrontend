@@ -9,11 +9,11 @@ void main() async {
   // Initialize Supabase if configured via env, file, or preferences
   await SupabaseService.initialize();
 
-  runApp(const WaitakiAlumniApp());
+  runApp(const WaitakiOldBoysApp());
 }
 
-class WaitakiAlumniApp extends StatelessWidget {
-  const WaitakiAlumniApp({super.key});
+class WaitakiOldBoysApp extends StatelessWidget {
+  const WaitakiOldBoysApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,3 +25,6 @@ class WaitakiAlumniApp extends StatelessWidget {
     );
   }
 }
+
+/// Backward compatibility alias
+typedef WaitakiAlumniApp = WaitakiOldBoysApp;

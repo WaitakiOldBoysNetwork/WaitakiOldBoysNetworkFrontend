@@ -336,7 +336,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
             ),
             SizedBox(height: 6),
             Text(
-              'Explore the Directory to connect with alumni!',
+              'Explore the Directory to connect with Old Boys!',
               style: TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
           ],
@@ -385,7 +385,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        otherProfile?.fullName ?? 'Connected Alumni',
+                        otherProfile?.fullName ?? 'Connected Old Boy',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,

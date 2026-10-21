@@ -114,7 +114,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Paste your Supabase project credentials below to connect the alumni network frontend to your database.',
+                      'Paste your Supabase project credentials below to connect the Old Boys network frontend to your database.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,

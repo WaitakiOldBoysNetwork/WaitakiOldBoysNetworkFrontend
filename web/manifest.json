@@ -1,11 +1,11 @@
 {
     "name": "Waitaki Old Boys' Network",
-    "short_name": "Waitaki Alumni",
+    "short_name": "Waitaki Old Boys",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0F2547",
     "theme_color": "#0F2547",
-    "description": "Exclusive networking platform for Waitaki Boys' High School alumni worldwide.",
+    "description": "Exclusive networking platform for Waitaki Boys' High School Old Boys worldwide.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

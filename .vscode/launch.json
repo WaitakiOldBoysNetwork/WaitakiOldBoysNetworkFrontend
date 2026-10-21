@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Waitaki Alumni (Chrome Web)",
+      "name": "Waitaki Old Boys (Chrome Web)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "name": "Waitaki Alumni (Windows Desktop)",
+      "name": "Waitaki Old Boys (Windows Desktop)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "name": "Waitaki Alumni (Edge Web)",
+      "name": "Waitaki Old Boys (Edge Web)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",

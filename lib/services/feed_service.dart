@@ -32,6 +32,7 @@ class FeedService {
 
     final profileMap = <String, Profile>{};
     if (authorIds.isNotEmpty) {
+      // First pass: try matching profiles by id
       try {
         final profilesRes = await _client
             .from('profiles')
@@ -45,13 +46,16 @@ class FeedService {
             profileMap[profile.userId!] = profile;
           }
         }
-      } catch (_) {
-        // Fallback: try filtering by user_id
+      } catch (_) {}
+
+      // Second pass: for any author IDs not yet resolved, try by user_id
+      final unresolvedIds = authorIds.where((id) => !profileMap.containsKey(id)).toList();
+      if (unresolvedIds.isNotEmpty) {
         try {
           final profilesRes2 = await _client
               .from('profiles')
               .select()
-              .filter('user_id', 'in', authorIds.toList());
+              .filter('user_id', 'in', unresolvedIds);
 
           for (final item in profilesRes2) {
             final profile = Profile.fromJson(item);
@@ -154,6 +158,7 @@ class FeedService {
 
     final profileMap = <String, Profile>{};
     if (userIds.isNotEmpty) {
+      // First pass: try matching by id
       try {
         final profilesRes = await _client
             .from('profiles')
@@ -166,6 +171,23 @@ class FeedService {
           if (profile.userId != null) profileMap[profile.userId!] = profile;
         }
       } catch (_) {}
+
+      // Second pass: try by user_id for any unresolved
+      final unresolvedIds = userIds.where((id) => !profileMap.containsKey(id)).toList();
+      if (unresolvedIds.isNotEmpty) {
+        try {
+          final profilesRes2 = await _client
+              .from('profiles')
+              .select()
+              .filter('user_id', 'in', unresolvedIds);
+
+          for (final p in profilesRes2) {
+            final profile = Profile.fromJson(p);
+            profileMap[profile.id] = profile;
+            if (profile.userId != null) profileMap[profile.userId!] = profile;
+          }
+        } catch (_) {}
+      }
     }
 
     return rawComments.map<PostComment>((json) {

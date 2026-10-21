@@ -1,6 +1,6 @@
 # Waitaki Old Boys' Network (Frontend)
 
-A LinkedIn-style alumni networking application built with **Flutter** (Web & Cross-Platform) and backed by **Supabase** (PostgreSQL, Auth, Storage, and RLS).
+A LinkedIn-style Old Boys networking application built with **Flutter** (Web & Cross-Platform) and backed by **Supabase** (PostgreSQL, Auth, Storage, and RLS).
 
 ---
 
@@ -10,23 +10,24 @@ A LinkedIn-style alumni networking application built with **Flutter** (Web & Cro
   - Email/Password login and registration.
   - Magic-link / OTP authentication.
   - Automatic session restoration with Supabase Auth streams.
-  - Automatic account linking with pre-imported records matching alumni email.
+  - Automatic account linking with pre-imported records matching Old Boys email.
 
-- **Alumni Feed (`FeedScreen`)**:
+- **Old Boys Feed (`FeedScreen`)**:
   - Chronological post stream with author avatar, graduation year badge (`'14`), headline, and relative timestamps.
   - Media photo attachments cached with `cached_network_image`.
   - Optimistic like toggle (`post_likes`) with real-time counters.
   - Comments modal sheet (`post_comments`) with live discussion and entry.
   - Cross-platform post composer with image picker (`image_picker`) uploading to Supabase Storage `media/posts/`.
 
-- **Alumni Directory (`DirectoryScreen`)**:
+- **Old Boys Directory (`DirectoryScreen`)**:
+  - Displays registered Old Boys who have active accounts on the network.
   - Real-time search by name, profession, or company.
   - Graduation year filter chips (e.g. `2024`, `2020`, `2015`, `2010`, `2000`, etc.).
   - Networking actions: send connection request, view pending state, or connected badge.
 
 - **My Network (`ConnectionsScreen`)**:
   - Incoming Invitations: accept or ignore connection requests.
-  - Connected Alumni: browse your active network.
+  - Connected Old Boys: browse your active network.
 
 - **My Profile (`ProfileScreen`)**:
   - WBHS Navy & Old Gold heritage banner.
@@ -39,9 +40,9 @@ A LinkedIn-style alumni networking application built with **Flutter** (Web & Cro
 
 ### Option 1: 1-Click Run in IDE
 Open this project in your IDE (Antigravity IDE / VS Code) and press **F5** (or navigate to **Run and Debug** in the sidebar) and select:
-- **Waitaki Alumni (Chrome Web)**
-- **Waitaki Alumni (Windows Desktop)**
-- **Waitaki Alumni (Edge Web)**
+- **Waitaki Old Boys (Chrome Web)**
+- **Waitaki Old Boys (Windows Desktop)**
+- **Waitaki Old Boys (Edge Web)**
 
 ### Option 2: Terminal
 Open a terminal in the project directory (`Ctrl + ~`) and run:

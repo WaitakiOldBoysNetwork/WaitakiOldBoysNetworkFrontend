@@ -6,13 +6,15 @@ import 'supabase_service.dart';
 class DirectoryService {
   final SupabaseClient _client = SupabaseService.client;
 
-  Future<List<Profile>> searchAlumni({
+  /// Searches registered Old Boys who have accounts on the network
+  Future<List<Profile>> searchOldBoys({
     String? query,
     int? gradYear,
     String? city,
     int limit = 100,
   }) async {
-    var req = _client.from('profiles').select();
+    // Only fetch users who have an active account on the network (user_id is not null)
+    var req = _client.from('profiles').select().not('user_id', 'is', null);
 
     if (gradYear != null) {
       req = req.eq('grad_year', gradYear);
@@ -25,13 +27,30 @@ class DirectoryService {
     if (query != null && query.trim().isNotEmpty) {
       final q = query.trim();
       req = req.or(
-        'first_name.ilike.%$q%,last_name.ilike.%$q%,headline.ilike.%$q%',
+        'first_name.ilike.%$q%,last_name.ilike.%$q%,headline.ilike.%$q%,Name.ilike.%$q%',
       );
     }
 
     final raw = await req.order('last_name', ascending: true).limit(limit);
-    return raw.map<Profile>((j) => Profile.fromJson(j)).toList();
+    return raw
+        .map<Profile>((j) => Profile.fromJson(j))
+        .where((p) => p.userId != null && p.userId!.trim().isNotEmpty)
+        .toList();
   }
+
+  /// Alias for backward compatibility
+  Future<List<Profile>> searchAlumni({
+    String? query,
+    int? gradYear,
+    String? city,
+    int limit = 100,
+  }) =>
+      searchOldBoys(
+        query: query,
+        gradYear: gradYear,
+        city: city,
+        limit: limit,
+      );
 
   Future<Map<String, Connection>> getMyConnections() async {
     final userId = SupabaseService.currentUserId;
