@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Waitaki Alumni (Chrome Web)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "-d",
+        "chrome"
+      ]
+    },
+    {
+      "name": "Waitaki Alumni (Windows Desktop)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "-d",
+        "windows"
+      ]
+    },
+    {
+      "name": "Waitaki Alumni (Edge Web)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "-d",
+        "edge"
+      ]
+    }
+  ]
+}
