@@ -13,10 +13,26 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signInWithPassword(
+    final response = await _client.auth.signInWithPassword(
       email: email.trim(),
       password: password,
     );
+
+    final userId = response.user?.id;
+    if (userId != null) {
+      final meta = response.user?.userMetadata;
+      await ensureProfileExists(
+        userId: userId,
+        email: email.trim(),
+        firstName: meta?['first_name']?.toString(),
+        lastName: meta?['last_name']?.toString(),
+        gradYear: meta?['grad_year'] != null
+            ? int.tryParse(meta!['grad_year'].toString())
+            : null,
+      );
+    }
+
+    return response;
   }
 
   Future<AuthResponse> signUpWithPassword({
@@ -62,11 +78,31 @@ class AuthService {
     int? gradYear,
   }) async {
     try {
-      // 1. Check if there's a pre-imported record with this email that lacks a user_id
+      // 1. Check if row exists for this userId
+      final existingUser = await _client
+          .from('profiles')
+          .select('id, user_id')
+          .or('id.eq.$userId,user_id.eq.$userId')
+          .maybeSingle();
+
+      if (existingUser != null) {
+        await _client.from('profiles').update({
+          'id': userId,
+          'user_id': userId,
+          if (firstName != null && firstName.trim().isNotEmpty)
+            'first_name': firstName.trim(),
+          if (lastName != null && lastName.trim().isNotEmpty)
+            'last_name': lastName.trim(),
+          'grad_year': ?gradYear,
+        }).or('id.eq.$userId,user_id.eq.$userId');
+        return;
+      }
+
+      // 2. Check if there's a pre-imported record with this email that lacks a user_id
       if (email != null && email.isNotEmpty) {
         final existing = await _client
             .from('profiles')
-            .select()
+            .select('id, Email')
             .ilike('Email', email.trim())
             .maybeSingle();
 
@@ -81,32 +117,23 @@ class AuthService {
                   'first_name': firstName.trim(),
                 if (lastName != null && lastName.trim().isNotEmpty)
                   'last_name': lastName.trim(),
-                if (gradYear != null) 'grad_year': gradYear,
+                'grad_year': ?gradYear,
               })
               .ilike('Email', email.trim());
           return;
         }
       }
 
-      await _client.from('profiles').upsert({
+      // 3. Insert new row
+      await _client.from('profiles').insert({
         'id': userId,
         'user_id': userId,
         'first_name': ?firstName?.trim(),
         'last_name': ?lastName?.trim(),
         'grad_year': ?gradYear,
-      }, onConflict: 'id');
-    } catch (_) {
-      // Fallback direct upsert
-      try {
-        await _client.from('profiles').upsert({
-          'id': userId,
-          'user_id': userId,
-          'first_name': ?firstName?.trim(),
-          'last_name': ?lastName?.trim(),
-          'grad_year': ?gradYear,
-        }, onConflict: 'id');
-      } catch (_) {}
-    }
+        if (email != null && email.isNotEmpty) 'Email': email.trim(),
+      });
+    } catch (_) {}
   }
 
   Future<void> sendMagicLink({required String email}) async {

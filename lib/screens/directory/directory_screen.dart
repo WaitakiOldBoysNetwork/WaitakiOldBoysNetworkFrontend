@@ -8,6 +8,7 @@ import '../../models/connection.dart';
 import '../../models/profile.dart';
 import '../../services/directory_service.dart';
 import '../../services/supabase_service.dart';
+import '../profile/profile_screen.dart';
 import 'widgets/old_boy_card.dart';
 
 class DirectoryScreen extends StatefulWidget {
@@ -267,6 +268,17 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                               isSelf: isSelf,
                               isConnecting: _connectingIds.contains(profileKey),
                               onConnectPressed: () => _handleConnect(profile),
+                              onTapProfile: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProfileScreen(
+                                      userId: profile.userId ?? profile.id,
+                                      initialProfile: profile,
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),

@@ -60,64 +60,24 @@ flutter run -d edge
 
 ---
 
-## Supabase Schema Reference
+## Supabase Backend & Database Setup
 
-The app connects to your Supabase project defined in `lib/core/constants/supabase_config.dart`. Ensure the following tables and buckets are configured:
+The complete, production-grade schema and migrations are located in [`supabase/migrations/01_complete_backend_setup.sql`](file:///c:/Users/JakeP/Documents/GitHub/WaitakiOldBoysNetworkFrontend/supabase/migrations/01_complete_backend_setup.sql).
 
-```sql
--- 1. Profiles Table
-CREATE TABLE public.profiles (
-  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  first_name text,
-  last_name text,
-  headline text,
-  grad_year int,
-  city text,
-  avatar_url text,
-  created_at timestamptz DEFAULT now()
-);
+### 1-Click Database Setup in Supabase Dashboard
+1. Open your project at [Supabase Dashboard](https://supabase.com/dashboard).
+2. Go to **SQL Editor** -> **New Query**.
+3. Copy and paste the entire contents of [`supabase/migrations/01_complete_backend_setup.sql`](file:///c:/Users/JakeP/Documents/GitHub/WaitakiOldBoysNetworkFrontend/supabase/migrations/01_complete_backend_setup.sql) and click **Run**.
+4. *(Optional)* To seed sample alumni profiles for testing the Directory and Feed screens, run [`supabase/migrations/02_sample_seed_data.sql`](file:///c:/Users/JakeP/Documents/GitHub/WaitakiOldBoysNetworkFrontend/supabase/migrations/02_sample_seed_data.sql).
 
--- 2. Connections Table
-CREATE TYPE connection_status AS ENUM ('pending', 'accepted', 'rejected');
-
-CREATE TABLE public.connections (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  requester_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  recipient_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  status connection_status DEFAULT 'pending',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
--- 3. Posts Table
-CREATE TABLE public.posts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  author_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  content text NOT NULL,
-  image_url text,
-  created_at timestamptz DEFAULT now()
-);
-
--- 4. Likes & Comments
-CREATE TABLE public.post_likes (
-  post_id uuid REFERENCES public.posts(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at timestamptz DEFAULT now(),
-  PRIMARY KEY (post_id, user_id)
-);
-
-CREATE TABLE public.post_comments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id uuid REFERENCES public.posts(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
--- 5. Storage Bucket
--- Ensure a public bucket named 'media' exists with folders 'avatars/' and 'posts/'
-```
+This automatically configures:
+- **`profiles`**: Full schema with dual-compatibility for modern and Airtable columns (`Year left School`, `Region`, `What are you up to`, `Name`, etc.)
+- **`posts`**, **`post_likes`**, **`post_comments`**: Post feed, likes toggle, and comment threads
+- **`connections`**: Network invitations, status tracking, and participant restrictions
+- **Row Level Security (RLS)**: Security policies for all tables allowing directory discovery while locking mutations to owner accounts
+- **Storage**: Public `media` bucket with `avatars/` and `posts/` folders & upload policies
+- **Auth Triggers & Sync**: Automatic user creation on signup and column bi-directional synchronization
+- **Realtime Replication**: Realtime subscriptions enabled for posts, likes, comments, and connections
 
 ---
 

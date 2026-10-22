@@ -6,7 +6,7 @@
     "background_color": "#0F2547",
     "theme_color": "#0F2547",
     "description": "Exclusive networking platform for Waitaki Boys' High School Old Boys worldwide.",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

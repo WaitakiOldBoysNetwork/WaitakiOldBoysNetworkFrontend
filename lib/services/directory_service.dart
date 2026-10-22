@@ -6,36 +6,47 @@ import 'supabase_service.dart';
 class DirectoryService {
   final SupabaseClient _client = SupabaseService.client;
 
-  /// Searches registered Old Boys who have accounts on the network
+  /// Searches Old Boys across both registered accounts and imported records
   Future<List<Profile>> searchOldBoys({
     String? query,
     int? gradYear,
     String? city,
     int limit = 100,
   }) async {
-    // Only fetch users who have an active account on the network (user_id is not null)
-    var req = _client.from('profiles').select().not('user_id', 'is', null);
+    var req = _client.from('profiles').select();
 
     if (gradYear != null) {
-      req = req.eq('grad_year', gradYear);
+      req = req.or('grad_year.eq.$gradYear,"Year left School".eq.$gradYear');
     }
 
     if (city != null && city.trim().isNotEmpty) {
-      req = req.ilike('city', '%${city.trim()}%');
+      final c = city.trim();
+      req = req.or('city.ilike.%$c%,Region.ilike.%$c%');
     }
 
     if (query != null && query.trim().isNotEmpty) {
       final q = query.trim();
       req = req.or(
-        'first_name.ilike.%$q%,last_name.ilike.%$q%,headline.ilike.%$q%,Name.ilike.%$q%',
+        'first_name.ilike.%$q%,last_name.ilike.%$q%,headline.ilike.%$q%,Name.ilike.%$q%,House.ilike.%$q%,Industry.ilike.%$q%',
       );
     }
 
-    final raw = await req.order('last_name', ascending: true).limit(limit);
-    return raw
+    final raw = await req.limit(limit);
+    final profiles = raw
         .map<Profile>((j) => Profile.fromJson(j))
-        .where((p) => p.userId != null && p.userId!.trim().isNotEmpty)
+        .where((p) => p.fullName.trim().isNotEmpty)
         .toList();
+
+    // Sort: profiles with registered accounts first, then alphabetically
+    profiles.sort((a, b) {
+      final aHasUser = a.userId != null && a.userId!.trim().isNotEmpty;
+      final bHasUser = b.userId != null && b.userId!.trim().isNotEmpty;
+      if (aHasUser && !bHasUser) return -1;
+      if (!aHasUser && bHasUser) return 1;
+      return a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase());
+    });
+
+    return profiles;
   }
 
   /// Alias for backward compatibility

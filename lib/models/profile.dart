@@ -7,6 +7,14 @@ class Profile {
   final int? gradYear;
   final String? city;
   final String? avatarUrl;
+  final String? house;
+  final String? industry;
+  final String? company;
+  final String? bio;
+  final String? email;
+  final String? phone;
+  final String? openToHelping;
+  final String? lookingFor;
   final DateTime? createdAt;
 
   Profile({
@@ -18,6 +26,14 @@ class Profile {
     this.gradYear,
     this.city,
     this.avatarUrl,
+    this.house,
+    this.industry,
+    this.company,
+    this.bio,
+    this.email,
+    this.phone,
+    this.openToHelping,
+    this.lookingFor,
     this.createdAt,
   });
 
@@ -74,15 +90,38 @@ class Profile {
         ? rawHeadline
         : json['What are you up to']?.toString();
 
+    // Parse avatar URL from avatar_url or Airtable Profile Photo format
+    String? photoUrl = json['avatar_url']?.toString();
+    if (photoUrl == null || photoUrl.isEmpty) {
+      final rawPhoto = json['Profile Photo']?.toString();
+      if (rawPhoto != null && rawPhoto.isNotEmpty) {
+        final match = RegExp(r'https?://[^\s)]+').firstMatch(rawPhoto);
+        if (match != null) {
+          photoUrl = match.group(0);
+        }
+      }
+    }
+
+    final rawId = (json['id'] ?? json['user_id'] ?? json['Email'] ?? json['Name'] ?? '').toString().trim();
+    final idVal = rawId.isNotEmpty ? rawId : DateTime.now().microsecondsSinceEpoch.toString();
+
     return Profile(
-      id: (json['id'] ?? json['user_id'] ?? '').toString(),
+      id: idVal,
       userId: json['user_id']?.toString(),
       firstName: fName,
       lastName: lName,
       headline: headlineVal,
       gradYear: grad,
       city: cityVal,
-      avatarUrl: json['avatar_url']?.toString(),
+      avatarUrl: photoUrl,
+      house: json['house']?.toString() ?? json['House']?.toString(),
+      industry: json['industry']?.toString() ?? json['Industry']?.toString(),
+      company: json['company']?.toString() ?? json['Company / Organisation']?.toString(),
+      bio: json['bio']?.toString() ?? json['Short Bio']?.toString() ?? json['Full Bio']?.toString(),
+      email: json['email']?.toString() ?? json['Email']?.toString().trim(),
+      phone: json['phone']?.toString() ?? json['Phone']?.toString(),
+      openToHelping: json['open_to_helping']?.toString() ?? json['Open to helping']?.toString(),
+      lookingFor: json['looking_for']?.toString() ?? json['Looking for']?.toString(),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -99,6 +138,11 @@ class Profile {
       'grad_year': gradYear,
       'city': city,
       'avatar_url': avatarUrl,
+      if (house != null) 'House': house,
+      if (industry != null) 'Industry': industry,
+      if (company != null) 'Company / Organisation': company,
+      if (email != null) 'Email': email,
+      if (phone != null) 'Phone': phone,
     };
   }
 
@@ -111,6 +155,14 @@ class Profile {
     int? gradYear,
     String? city,
     String? avatarUrl,
+    String? house,
+    String? industry,
+    String? company,
+    String? bio,
+    String? email,
+    String? phone,
+    String? openToHelping,
+    String? lookingFor,
     DateTime? createdAt,
   }) {
     return Profile(
@@ -122,6 +174,14 @@ class Profile {
       gradYear: gradYear ?? this.gradYear,
       city: city ?? this.city,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      house: house ?? this.house,
+      industry: industry ?? this.industry,
+      company: company ?? this.company,
+      bio: bio ?? this.bio,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      openToHelping: openToHelping ?? this.openToHelping,
+      lookingFor: lookingFor ?? this.lookingFor,
       createdAt: createdAt ?? this.createdAt,
     );
   }
