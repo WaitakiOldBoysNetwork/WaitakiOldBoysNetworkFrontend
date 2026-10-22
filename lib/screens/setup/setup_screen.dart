@@ -24,9 +24,10 @@ class _SetupScreenState extends State<SetupScreen> {
     _urlController.text = SupabaseConfig.url.contains('your-project-ref')
         ? ''
         : SupabaseConfig.url;
-    _keyController.text = SupabaseConfig.anonKey.contains('your-anon-key')
+    _keyController.text = (SupabaseConfig.publishableKey.contains('your-publishable-key') ||
+            SupabaseConfig.publishableKey.contains('your-anon-key'))
         ? ''
-        : SupabaseConfig.anonKey;
+        : SupabaseConfig.publishableKey;
   }
 
   @override
@@ -47,14 +48,18 @@ class _SetupScreenState extends State<SetupScreen> {
     if (key.isEmpty) {
       SnackbarHelper.showError(
         context,
-        'Please enter your Supabase anon/public key',
+        'Please enter your Supabase publishable key (e.g. sb_publishable_...)',
       );
       return;
     }
 
     setState(() => _isSaving = true);
     try {
-      await SupabaseService.reinitializeWith(url: url, anonKey: key);
+      await SupabaseService.reinitializeWith(
+        url: url,
+        publishableKey: key,
+        anonKey: key,
+      );
       widget.onConfigured();
     } catch (e) {
       if (mounted) {
@@ -142,19 +147,44 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    const Text(
-                      'Anon / Public Key',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        const Text(
+                          'Publishable API Key',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.navyPrimary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'sb_publishable_...',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.navyPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _keyController,
                       obscureText: true,
                       decoration: const InputDecoration(
-                        hintText: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                        hintText: 'sb_publishable_... (or legacy anon key)',
                         prefixIcon: Icon(Icons.key, size: 20),
                       ),
                     ),
@@ -184,8 +214,8 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    Text(
-                      'Tip: You can also define these in lib/core/constants/supabase_config.dart or via --dart-define flags.',
+                    const Text(
+                      'Tip: You can also define these in lib/core/constants/supabase_config.dart or via --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_PUBLISHABLE_KEY=...',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,

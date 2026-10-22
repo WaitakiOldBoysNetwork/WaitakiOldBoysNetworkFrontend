@@ -26,16 +26,22 @@ class SupabaseService {
     if (SupabaseConfig.isConfigured) {
       await Supabase.initialize(
         url: SupabaseConfig.url,
-        anonKey: SupabaseConfig.anonKey,
+        publishableKey: SupabaseConfig.publishableKey,
       );
     }
   }
 
   static Future<void> reinitializeWith({
     required String url,
-    required String anonKey,
+    String? publishableKey,
+    @Deprecated('Use publishableKey instead') String? anonKey,
   }) async {
-    await SupabaseConfig.saveRuntimeCredentials(url: url, anonKey: anonKey);
-    await Supabase.initialize(url: url, anonKey: anonKey);
+    final key = (publishableKey ?? anonKey ?? '').trim();
+    await SupabaseConfig.saveRuntimeCredentials(
+      url: url,
+      anonKey: key,
+      publishableKey: key,
+    );
+    await Supabase.initialize(url: url, publishableKey: key);
   }
 }

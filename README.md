@@ -56,7 +56,33 @@ flutter run -d windows
 
 # Run in Edge
 flutter run -d edge
+
+# Optional: Run with custom Supabase credentials via --dart-define
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
+
+---
+
+## Supabase API Keys & Migration Guide
+
+This project has been updated to use modern **Supabase Publishable API keys** (`sb_publishable_...`) per the [Supabase API Keys Documentation](https://supabase.com/docs/guides/getting-started/api-keys).
+
+### Key Concept: Publishable vs. Secret Keys
+- **Publishable Key (`sb_publishable_...`)**: Replaces the legacy JWT `anon` key. Safe to embed in frontend clients (web, desktop, and mobile) because all database queries are strictly secured by PostgreSQL **Row Level Security (RLS)**.
+- **Secret Key (`sb_secret_...`)**: Replaces the legacy `service_role` key. Bypasses RLS and should **never** be used in frontend applications.
+- **Backward Compatibility**: Existing persisted configurations and legacy JWT `anon` keys remain supported via `SUPABASE_ANON_KEY` and `SupabaseConfig.anonKey` fallback aliases.
+
+### Configuring Credentials
+You can provide your credentials in one of three ways:
+1. **In-App Setup Screen**: Launch the app and enter your Project URL and Publishable Key directly in the UI.
+2. **Environment Flags (`--dart-define`)**:
+   ```bash
+   --dart-define=SUPABASE_URL=https://xyz.supabase.co
+   --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   ```
+3. **Configuration File**: Edit [`lib/core/constants/supabase_config.dart`](file:///c:/Users/JakeP/Documents/GitHub/WaitakiOldBoysNetworkFrontend/lib/core/constants/supabase_config.dart).
 
 ---
 
