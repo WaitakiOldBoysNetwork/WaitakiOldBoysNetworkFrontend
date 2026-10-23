@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/connection.dart';
 import '../models/profile.dart';
@@ -8,12 +9,27 @@ class DirectoryService {
 
   // In-memory cache for connections to avoid multiple roundtrips per screen navigation
   static Map<String, Connection>? _cachedConnections;
+  static String? _cachedUserId;
   static DateTime? _connectionsTimestamp;
   static const _connectionsCacheDuration = Duration(seconds: 60);
 
   static void invalidateConnectionsCache() {
     _cachedConnections = null;
+    _cachedUserId = null;
     _connectionsTimestamp = null;
+  }
+
+  @visibleForTesting
+  static String? get cachedUserId => _cachedUserId;
+
+  @visibleForTesting
+  static Map<String, Connection>? get cachedConnections => _cachedConnections;
+
+  @visibleForTesting
+  static void setCachedConnectionsForTest(Map<String, Connection>? connections, String? userId) {
+    _cachedConnections = connections;
+    _cachedUserId = userId;
+    _connectionsTimestamp = DateTime.now();
   }
 
   /// Searches Old Boys across both registered accounts and imported records
@@ -82,6 +98,7 @@ class DirectoryService {
 
     if (!forceRefresh &&
         _cachedConnections != null &&
+        _cachedUserId == userId &&
         _connectionsTimestamp != null &&
         DateTime.now().difference(_connectionsTimestamp!) < _connectionsCacheDuration) {
       return _cachedConnections!;
@@ -99,6 +116,7 @@ class DirectoryService {
       map[otherId] = conn;
     }
     _cachedConnections = map;
+    _cachedUserId = userId;
     _connectionsTimestamp = DateTime.now();
     return map;
   }

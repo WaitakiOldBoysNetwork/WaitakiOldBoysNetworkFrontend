@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants/supabase_config.dart';
@@ -10,39 +10,75 @@ class ProfileService {
 
   // In-memory cache for the current user's profile to prevent redundant REST calls on navigation
   static Profile? _cachedCurrentProfile;
+  static String? _cachedUserId;
   static DateTime? _cacheTimestamp;
   static const _cacheDuration = Duration(minutes: 3);
 
-  /// Explicitly clear in-memory profile cache
+  // In-memory set of user IDs who have completed or skipped onboarding during this app run
+  static final Set<String> _onboardingCompletedUsers = {};
+
+  /// Explicitly clear in-memory profile cache and user tracking
   static void invalidateCache() {
     _cachedCurrentProfile = null;
+    _cachedUserId = null;
     _cacheTimestamp = null;
+    _onboardingCompletedUsers.clear();
+  }
+
+  /// Mark onboarding completed in memory
+  static void markOnboardingCompleted(String userId) {
+    _onboardingCompletedUsers.add(userId);
+  }
+
+  /// Reset in-memory onboarding completion tracking (for logout or tests)
+  static void resetOnboardingMemory() {
+    _onboardingCompletedUsers.clear();
+  }
+
+  @visibleForTesting
+  static String? get cachedUserId => _cachedUserId;
+
+  @visibleForTesting
+  static Profile? get cachedCurrentProfile => _cachedCurrentProfile;
+
+  @visibleForTesting
+  static void setCachedProfileForTest(Profile? profile, String? userId) {
+    _cachedCurrentProfile = profile;
+    _cachedUserId = userId;
+    _cacheTimestamp = DateTime.now();
   }
 
   Future<Profile?> getCurrentProfile({bool forceRefresh = false}) async {
     if (!SupabaseService.isInitialized) return null;
     final userId = SupabaseService.currentUserId;
-    if (userId == null) return null;
+    if (userId == null) {
+      invalidateCache();
+      return null;
+    }
 
+    // Strictly ensure in-memory cache belongs to the exact currently authenticated userId
     if (!forceRefresh &&
         _cachedCurrentProfile != null &&
+        _cachedUserId == userId &&
         _cacheTimestamp != null &&
         DateTime.now().difference(_cacheTimestamp!) < _cacheDuration) {
       return _cachedCurrentProfile;
     }
 
     try {
-      // Profiles might match by id or user_id
+      // Query profiles strictly matching current authenticated user's ID
+      // Order by updated_at descending and take 1 to gracefully handle legacy duplicates
       final response = await _client
           .from('profiles')
           .select(
             'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for',
           )
-          .or('id.eq.$userId,user_id.eq.$userId')
-          .maybeSingle();
+          .or('user_id.eq.$userId,id.eq.$userId')
+          .order('updated_at', ascending: false)
+          .limit(1);
 
-      if (response != null) {
-        var profile = Profile.fromJson(response);
+      if (response.isNotEmpty) {
+        var profile = Profile.fromJson(response.first);
         // Fallback banner check from user metadata or SharedPreferences if column not populated
         if (profile.bannerUrl == null || profile.bannerUrl!.isEmpty) {
           final fallbackBanner = await _getFallbackBanner(userId);
@@ -51,6 +87,7 @@ class ProfileService {
           }
         }
         _cachedCurrentProfile = profile;
+        _cachedUserId = userId;
         _cacheTimestamp = DateTime.now();
         return profile;
       }
@@ -77,10 +114,15 @@ class ProfileService {
             : null,
       );
       _cachedCurrentProfile = placeholder;
+      _cachedUserId = userId;
       _cacheTimestamp = DateTime.now();
       return placeholder;
     } catch (e) {
-      return _cachedCurrentProfile;
+      // Never return another user's cached profile on error
+      if (_cachedCurrentProfile != null && _cachedUserId == userId) {
+        return _cachedCurrentProfile;
+      }
+      return null;
     }
   }
 
@@ -93,10 +135,11 @@ class ProfileService {
             'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for',
           )
           .or('id.eq.$id,user_id.eq.$id')
-          .maybeSingle();
+          .order('updated_at', ascending: false)
+          .limit(1);
 
-      if (response != null) {
-        var profile = Profile.fromJson(response);
+      if (response.isNotEmpty) {
+        var profile = Profile.fromJson(response.first);
         final currentUserId = SupabaseService.currentUserId;
         if ((profile.bannerUrl == null || profile.bannerUrl!.isEmpty) &&
             currentUserId != null &&
@@ -185,6 +228,9 @@ class ProfileService {
       data['banner_url'] = bannerUrl.trim().isEmpty ? null : bannerUrl.trim();
     }
 
+    // Invalidate cached profile so subsequent immediate reads won't return stale data
+    invalidateCache();
+
     // Also persist in auth user metadata for fast responsive fallback
     try {
       await _client.auth.updateUser(UserAttributes(
@@ -206,12 +252,14 @@ class ProfileService {
       ));
     } catch (_) {}
 
-    // Check if a profile row exists matching this user's id or user_id
-    final existing = await _client
+    // Check if a profile row exists strictly matching this user's id or user_id
+    final existingList = await _client
         .from('profiles')
         .select('id, user_id')
         .or('id.eq.$userId,user_id.eq.$userId')
-        .maybeSingle();
+        .limit(1);
+
+    final existing = existingList.isNotEmpty ? existingList.first : null;
 
     try {
       if (existing != null) {
@@ -223,31 +271,37 @@ class ProfileService {
         return;
       }
 
-      // Check if there's a pre-imported record matching current user's email
+      // Check if there's an UNCLAIMED pre-imported record matching current user's email
+      // Strictly require user_id IS NULL to prevent claiming or overwriting another user's record!
       final userEmail = SupabaseService.currentUser?.email;
       if (userEmail != null && userEmail.trim().isNotEmpty) {
-        final byEmail = await _client
+        final unclaimedList = await _client
             .from('profiles')
-            .select('id, Email')
+            .select('id, user_id, Email')
+            .filter('user_id', 'is', 'null')
             .ilike('Email', userEmail.trim())
-            .maybeSingle();
+            .limit(1);
 
-        if (byEmail != null) {
+        if (unclaimedList.isNotEmpty) {
+          final targetRecordId = unclaimedList.first['id'];
           await _client
               .from('profiles')
               .update({
                 'id': userId,
+                'user_id': userId,
                 ...data,
               })
-              .ilike('Email', userEmail.trim());
+              .eq('id', targetRecordId)
+              .filter('user_id', 'is', 'null');
           invalidateCache();
           return;
         }
       }
 
-      // Otherwise insert a new profile row
+      // Otherwise insert a new profile row strictly keyed to this authenticated user
       await _client.from('profiles').insert({
         'id': userId,
+        'user_id': userId,
         ...data,
       });
       invalidateCache();
@@ -265,6 +319,7 @@ class ProfileService {
         }
         await _client.from('profiles').insert({
           'id': userId,
+          'user_id': userId,
           ...data,
         });
         invalidateCache();
@@ -288,17 +343,29 @@ class ProfileService {
     final userId = SupabaseService.currentUserId;
     if (userId == null) throw Exception('User not logged in');
 
+    // 1. Immediately flag onboarding completed in memory and SharedPreferences
+    // so any concurrent checks (e.g. from auth state listeners) immediately know it's completed.
+    markOnboardingCompleted(userId);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('sp_onboarding_completed_$userId', true);
+    } catch (_) {}
+
+    // Prefer the authenticated user's own auth metadata first to guarantee identity
+    final meta = SupabaseService.currentUser?.userMetadata;
+    final metaFirst = meta?['first_name']?.toString().trim();
+    final metaLast = meta?['last_name']?.toString().trim();
+
     final currentProfile = await getCurrentProfile();
-    final firstName = (currentProfile?.firstName ??
-            SupabaseService.currentUser?.userMetadata?['first_name']
-                ?.toString() ??
-            '')
-        .trim();
-    final lastName = (currentProfile?.lastName ??
-            SupabaseService.currentUser?.userMetadata?['last_name']
-                ?.toString() ??
-            '')
-        .trim();
+    final isOwnProfile = currentProfile != null &&
+        (currentProfile.id == userId || currentProfile.userId == userId);
+
+    final firstName = (metaFirst != null && metaFirst.isNotEmpty)
+        ? metaFirst
+        : (isOwnProfile ? (currentProfile.firstName ?? '').trim() : '');
+    final lastName = (metaLast != null && metaLast.isNotEmpty)
+        ? metaLast
+        : (isOwnProfile ? (currentProfile.lastName ?? '').trim() : '');
 
     await updateProfile(
       firstName: firstName.isNotEmpty ? firstName : 'Old',
@@ -313,7 +380,7 @@ class ProfileService {
       openToHelping: openToHelping ? 'true' : null,
     );
 
-    // Save completion flag in SharedPreferences
+    // Ensure SharedPreferences flag is saved
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('sp_onboarding_completed_$userId', true);
@@ -324,6 +391,7 @@ class ProfileService {
   Future<void> skipOnboarding() async {
     final userId = SupabaseService.currentUserId;
     if (userId == null) return;
+    markOnboardingCompleted(userId);
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('sp_onboarding_completed_$userId', true);
@@ -336,10 +404,16 @@ class ProfileService {
     final userId = SupabaseService.currentUserId;
     if (userId == null) return false;
 
+    // Check in-memory flag first for instantaneous response
+    if (_onboardingCompletedUsers.contains(userId)) return false;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final isCompleted = prefs.getBool('sp_onboarding_completed_$userId');
-      if (isCompleted == true) return false;
+      if (isCompleted == true) {
+        _onboardingCompletedUsers.add(userId);
+        return false;
+      }
 
       final profile = await getCurrentProfile();
       if (profile == null) return true;
@@ -354,6 +428,7 @@ class ProfileService {
           (profile.industry != null && profile.industry!.trim().isNotEmpty);
 
       if (hasHouse && hasGradYear && hasLocationOrCareer) {
+        _onboardingCompletedUsers.add(userId);
         await prefs.setBool('sp_onboarding_completed_$userId', true);
         return false;
       }
@@ -551,6 +626,9 @@ class ProfileService {
       await prefs.remove('sp_onboarding_completed_$userId');
       await prefs.remove('onboarding_skipped_$userId');
     } catch (_) {}
+
+    _onboardingCompletedUsers.remove(userId);
+    invalidateCache();
 
     // 4. Sign out
     try {

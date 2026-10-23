@@ -67,31 +67,9 @@ class SupabaseConfig {
         'https://waitakioldboysnetwork.github.io/WaitakiOldBoysNetworkFrontend/',
   );
 
-  /// Platform-aware authentication callback / redirect URL for OAuth, Email Confirmation, and Magic Links
-  static String get authCallbackUrl {
-    if (kIsWeb) {
-      try {
-        final base = Uri.base;
-        final host = base.host.toLowerCase();
-        // If explicitly running in local dev browser (localhost / 127.0.0.1)
-        if (host == 'localhost' || host == '127.0.0.1') {
-          return base.origin;
-        }
-        // If running on hosted web (e.g. GitHub Pages or custom domain)
-        final origin = base.origin;
-        final path = base.path;
-        if (origin.isNotEmpty && !origin.startsWith('null')) {
-          final cleanPath = path.isEmpty || path == '/'
-              ? ''
-              : (path.endsWith('/') ? path : '$path/');
-          return '$origin$cleanPath';
-        }
-      } catch (_) {}
-      return productionWebUrl;
-    }
-    // For Desktop / Mobile, redirect email links to the live production web page
-    return productionWebUrl;
-  }
+  /// Authentication callback / redirect URL for OAuth, Email Confirmation, and Magic Links.
+  /// Strictly points to production GitHub Pages URL to prevent localhost redirect leaks.
+  static String get authCallbackUrl => productionWebUrl;
 
   /// Load persisted credentials from SharedPreferences, with support for Web URL query parameter overrides
   static Future<void> loadPersisted() async {

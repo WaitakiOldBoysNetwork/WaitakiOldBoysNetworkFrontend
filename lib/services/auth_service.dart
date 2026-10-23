@@ -1,6 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/constants/supabase_config.dart';
+import 'directory_service.dart';
+import 'feed_service.dart';
+import 'profile_service.dart';
 import 'supabase_service.dart';
 
 class AuthService {
@@ -85,13 +88,13 @@ class AuthService {
   }) async {
     try {
       // 1. Check if row exists for this userId
-      final existingUser = await _client
+      final existingUserList = await _client
           .from('profiles')
           .select('id, user_id')
           .or('id.eq.$userId,user_id.eq.$userId')
-          .maybeSingle();
+          .limit(1);
 
-      if (existingUser != null) {
+      if (existingUserList.isNotEmpty) {
         await _client.from('profiles').update({
           'id': userId,
           'user_id': userId,
@@ -104,16 +107,19 @@ class AuthService {
         return;
       }
 
-      // 2. Check if there's a pre-imported record with this email that lacks a user_id
+      // 2. Check if there's an UNCLAIMED pre-imported record with this email that lacks a user_id
+      // Strictly filter for user_id IS NULL to prevent hijacking or leaking another user's profile!
       if (email != null && email.isNotEmpty) {
-        final existing = await _client
+        final unclaimedList = await _client
             .from('profiles')
-            .select('id, Email')
+            .select('id, user_id, Email')
+            .filter('user_id', 'is', 'null')
             .ilike('Email', email.trim())
-            .maybeSingle();
+            .limit(1);
 
-        if (existing != null) {
-          // Link this pre-imported record to the newly registered account
+        if (unclaimedList.isNotEmpty) {
+          final recordId = unclaimedList.first['id'];
+          // Link this pre-imported record strictly by primary key and verify user_id is still null
           await _client
               .from('profiles')
               .update({
@@ -125,17 +131,20 @@ class AuthService {
                   'last_name': lastName.trim(),
                 'grad_year': ?gradYear,
               })
-              .ilike('Email', email.trim());
+              .eq('id', recordId)
+              .filter('user_id', 'is', 'null');
           return;
         }
       }
 
-      // 3. Insert new row
+      // 3. Insert new row strictly keyed to this authenticated user
       await _client.from('profiles').insert({
         'id': userId,
         'user_id': userId,
-        'first_name': ?firstName?.trim(),
-        'last_name': ?lastName?.trim(),
+        if (firstName != null && firstName.trim().isNotEmpty)
+          'first_name': firstName.trim(),
+        if (lastName != null && lastName.trim().isNotEmpty)
+          'last_name': lastName.trim(),
         'grad_year': ?gradYear,
         if (email != null && email.isNotEmpty) 'Email': email.trim(),
       });
@@ -150,6 +159,10 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    // Explicitly reset all in-memory profile and connection data so nothing bleeds across accounts
+    ProfileService.invalidateCache();
+    DirectoryService.invalidateConnectionsCache();
+    FeedService.clearCache();
     await _client.auth.signOut();
   }
 }

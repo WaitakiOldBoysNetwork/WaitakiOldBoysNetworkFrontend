@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants/supabase_config.dart';
 import '../models/post.dart';
@@ -11,6 +11,19 @@ class FeedService {
 
   // In-memory cache for author profiles across feed renders
   static final Map<String, Profile> _authorCache = {};
+
+  /// Explicitly clear cached author profiles
+  static void clearCache() {
+    _authorCache.clear();
+  }
+
+  @visibleForTesting
+  static int get authorCacheSize => _authorCache.length;
+
+  @visibleForTesting
+  static void setCachedAuthorForTest(String id, Profile profile) {
+    _authorCache[id] = profile;
+  }
 
   Future<List<Post>> getPosts({int limit = 25}) async {
     if (!SupabaseService.isInitialized) return [];

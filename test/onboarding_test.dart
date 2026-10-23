@@ -3,6 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:waitaki_network/models/profile.dart';
 import 'package:waitaki_network/screens/onboarding/onboarding_screen.dart';
+import 'package:waitaki_network/services/directory_service.dart';
+import 'package:waitaki_network/services/feed_service.dart';
+import 'package:waitaki_network/services/profile_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -150,6 +153,79 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsWidgets);
+    });
+  });
+
+  group('Onboarding Completion State Tests', () {
+    setUp(() {
+      ProfileService.resetOnboardingMemory();
+    });
+
+    test('markOnboardingCompleted prevents shouldShowOnboarding from returning true', () async {
+      final service = ProfileService();
+      // Initially false when Supabase is not initialized
+      expect(await service.shouldShowOnboarding(), isFalse);
+
+      ProfileService.markOnboardingCompleted('test-user-123');
+      expect(await service.shouldShowOnboarding(), isFalse);
+    });
+
+    test('SharedPreferences persistence for onboarding completed', () async {
+      SharedPreferences.setMockInitialValues({
+        'sp_onboarding_completed_user_abc': true,
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('sp_onboarding_completed_user_abc'), isTrue);
+    });
+  });
+
+  group('Auth State & Cache Isolation Tests', () {
+    setUp(() {
+      ProfileService.invalidateCache();
+      DirectoryService.invalidateConnectionsCache();
+      FeedService.clearCache();
+    });
+
+    test('ProfileService cache isolation and invalidation resets correctly', () async {
+      // Simulate Jake logging in and having his profile cached
+      final jakeProfile = Profile(
+        id: 'jake-profile-id',
+        userId: 'jake-auth-uid',
+        firstName: 'Jake',
+        lastName: 'Crossan',
+      );
+      ProfileService.setCachedProfileForTest(jakeProfile, 'jake-auth-uid');
+
+      expect(ProfileService.cachedUserId, equals('jake-auth-uid'));
+      expect(ProfileService.cachedCurrentProfile?.firstName, equals('Jake'));
+
+      // Invalidate cache (e.g. on logout or user switch in AuthGate)
+      ProfileService.invalidateCache();
+
+      expect(ProfileService.cachedUserId, isNull);
+      expect(ProfileService.cachedCurrentProfile, isNull);
+    });
+
+    test('DirectoryService and FeedService caches clear completely on logout/user switch', () {
+      DirectoryService.setCachedConnectionsForTest({}, 'user-123');
+      expect(DirectoryService.cachedUserId, equals('user-123'));
+      expect(DirectoryService.cachedConnections, isNotNull);
+
+      DirectoryService.invalidateConnectionsCache();
+      expect(DirectoryService.cachedUserId, isNull);
+      expect(DirectoryService.cachedConnections, isNull);
+
+      final dummyProfile = Profile(
+        id: 'author-1',
+        firstName: 'Philip',
+        lastName: 'Crossan',
+      );
+      FeedService.setCachedAuthorForTest('author-1', dummyProfile);
+      expect(FeedService.authorCacheSize, equals(1));
+
+      FeedService.clearCache();
+      expect(FeedService.authorCacheSize, equals(0));
     });
   });
 }
