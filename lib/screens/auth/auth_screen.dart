@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
@@ -114,11 +115,24 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, e.toString());
+        SnackbarHelper.showError(context, _parseAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _parseAuthError(dynamic error) {
+    final str = error.toString();
+    if (str.contains('over_email_send_rate_limit') ||
+        str.contains('rate limit') ||
+        str.contains('429')) {
+      return 'Supabase email rate limit exceeded. The default test provider limits emails to ~3 per hour. Please wait a bit, or turn off "Confirm email" in Supabase settings for testing.';
+    }
+    if (error is AuthException) {
+      return error.message;
+    }
+    return str;
   }
 
   Future<void> _handleMagicLink() async {
@@ -139,7 +153,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, e.toString());
+        SnackbarHelper.showError(context, _parseAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
