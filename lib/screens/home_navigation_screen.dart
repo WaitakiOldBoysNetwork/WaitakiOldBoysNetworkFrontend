@@ -146,6 +146,88 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     }
   }
 
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.crimson.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_forever_rounded,
+                color: AppColors.crimson,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Delete Account?',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.navyDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This action is irreversible. All of your profile details, Waitaki heritage information, posts, comments, likes, and connections will be permanently wiped.',
+          style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.crimson,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text(
+              'Permanently Delete',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _profileService.deleteAccount();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Your account has been permanently deleted.'),
+              backgroundColor: AppColors.navyDark,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete account: $e'),
+              backgroundColor: AppColors.crimson,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -203,7 +285,8 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isCompact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: [
           // 1. Top Branding: "Waitaki Old Boys Network"
           _buildTopBranding(isCompact, isAutoCompact),
@@ -282,13 +365,31 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                   Center(
                     child: Tooltip(
                       message: 'Share Post',
-                      child: IconButton.filled(
-                        onPressed: _openCreatePost,
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.navyPrimary,
-                          foregroundColor: AppColors.goldAccent,
+                      child: InkWell(
+                        onTap: _openCreatePost,
+                        borderRadius: BorderRadius.circular(22),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.navyPrimary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.navyPrimary.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.add_rounded,
+                              size: 22,
+                              color: AppColors.goldAccent,
+                            ),
+                          ),
                         ),
-                        icon: const Icon(Icons.add_rounded, size: 20),
                       ),
                     ),
                   ),
@@ -305,95 +406,60 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
 
   Widget _buildTopBranding(bool isCompact, bool isAutoCompact) {
     if (isCompact) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          children: [
-            Tooltip(
-              message: 'Waitaki Old Boys Network',
-              child: InkWell(
-                onTap: () => _navigateToIndex(0),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.navyDark, AppColors.navyPrimary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.navyPrimary.withValues(alpha: 0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.school_rounded,
-                      color: AppColors.goldAccent,
-                      size: 22,
-                    ),
+      return SizedBox(
+        width: 76.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Tooltip(
+                message: 'Waitaki Old Boys Network',
+                child: InkWell(
+                  onTap: () => _navigateToIndex(0),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 50,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-            ),
-            if (!isAutoCompact) ...[
-              const SizedBox(height: 6),
-              IconButton(
-                icon: const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: AppColors.textMuted,
+              if (!isAutoCompact) ...[
+                const SizedBox(height: 8),
+                Center(
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: AppColors.textMuted,
+                    ),
+                    tooltip: 'Expand sidebar',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => setState(() => _isCollapsed = false),
+                  ),
                 ),
-                tooltip: 'Expand sidebar',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: () => setState(() => _isCollapsed = false),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 12, 16),
+      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
       child: Row(
         children: [
           // WBHS Crest Logo Container
           InkWell(
             onTap: () => _navigateToIndex(0),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.navyDark, AppColors.navyPrimary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.navyPrimary.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.school_rounded,
-                  color: AppColors.goldAccent,
-                  size: 23,
-                ),
-              ),
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 46,
+              fit: BoxFit.contain,
             ),
           ),
           const SizedBox(width: 12),
@@ -419,27 +485,30 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Row(
-                    children: const [
-                      Text(
-                        'Network',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.goldDark,
-                          letterSpacing: 0.5,
+                  Text.rich(
+                    const TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Network',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.goldDark,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        '• Est. 1883',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w500,
+                        TextSpan(
+                          text: ' • Est. 1883',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -474,12 +543,49 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
   }) {
     final isSelected = _currentIndex == index;
 
+    if (isCompact) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Tooltip(
+            message: title,
+            child: InkWell(
+              onTap: () => _navigateToIndex(index),
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.navyPrimary.withValues(alpha: 0.08)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Badge(
+                    isLabelVisible: (badgeCount ?? 0) > 0,
+                    label: Text('$badgeCount'),
+                    backgroundColor: AppColors.crimson,
+                    child: Icon(
+                      isSelected ? activeIcon : icon,
+                      color: isSelected
+                          ? AppColors.navyPrimary
+                          : AppColors.textSecondary,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 14,
-        vertical: 10,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: isSelected
             ? AppColors.navyPrimary.withValues(alpha: 0.08)
@@ -487,8 +593,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        mainAxisAlignment:
-            isCompact ? MainAxisAlignment.center : MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Badge(
             isLabelVisible: (badgeCount ?? 0) > 0,
@@ -500,56 +605,45 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
               size: 21,
             ),
           ),
-          if (!isCompact) ...[
-            const SizedBox(width: 12),
-            Expanded(
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? AppColors.navyDark : AppColors.textPrimary,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          if ((badgeCount ?? 0) > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.crimson,
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? AppColors.navyDark : AppColors.textPrimary,
-                  letterSpacing: -0.2,
+                '$badgeCount',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
-            if ((badgeCount ?? 0) > 0)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.crimson,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$badgeCount',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-          ],
         ],
       ),
     );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      child: isCompact
-          ? Tooltip(
-              message: title,
-              child: InkWell(
-                onTap: () => _navigateToIndex(index),
-                borderRadius: BorderRadius.circular(10),
-                child: content,
-              ),
-            )
-          : InkWell(
-              onTap: () => _navigateToIndex(index),
-              borderRadius: BorderRadius.circular(10),
-              child: content,
-            ),
+      child: InkWell(
+        onTap: () => _navigateToIndex(index),
+        borderRadius: BorderRadius.circular(10),
+        child: content,
+      ),
     );
   }
 
@@ -557,6 +651,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     final profile = _currentProfile;
 
     return Container(
+      width: isCompact ? 76.0 : double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
         border: Border(
@@ -662,12 +757,14 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     borderRadius: BorderRadius.circular(12),
                     side: const BorderSide(color: AppColors.border),
                   ),
-                  offset: const Offset(0, -96),
+                  offset: const Offset(0, -136),
                   onSelected: (val) {
                     if (val == 'profile') {
                       _navigateToIndex(3);
                     } else if (val == 'signout') {
                       _confirmSignOut();
+                    } else if (val == 'delete_account') {
+                      _confirmDeleteAccount();
                     }
                   },
                   itemBuilder: (ctx) => [
@@ -695,11 +792,34 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                           Icon(
                             Icons.logout_rounded,
                             size: 17,
-                            color: AppColors.crimson,
+                            color: AppColors.navyDark,
                           ),
                           SizedBox(width: 10),
                           Text(
                             'Sign Out',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.navyDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(height: 1),
+                    const PopupMenuItem<String>(
+                      value: 'delete_account',
+                      height: 38,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_forever_rounded,
+                            size: 17,
+                            color: AppColors.crimson,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Delete Account',
                             style: TextStyle(
                               fontSize: 13,
                               color: AppColors.crimson,

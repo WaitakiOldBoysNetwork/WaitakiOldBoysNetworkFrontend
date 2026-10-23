@@ -4,7 +4,7 @@ import '../models/profile.dart';
 import 'supabase_service.dart';
 
 class DirectoryService {
-  final SupabaseClient _client = SupabaseService.client;
+  SupabaseClient get _client => SupabaseService.client;
 
   /// Searches Old Boys across both registered accounts and imported records
   Future<List<Profile>> searchOldBoys({
@@ -13,6 +13,7 @@ class DirectoryService {
     String? city,
     int limit = 100,
   }) async {
+    if (!SupabaseService.isInitialized) return [];
     var req = _client.from('profiles').select();
 
     if (gradYear != null) {

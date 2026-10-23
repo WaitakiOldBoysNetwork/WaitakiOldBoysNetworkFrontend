@@ -328,20 +328,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            width: 38,
+                          Image.asset(
+                            'assets/images/logo.png',
                             height: 38,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.navyDark, AppColors.navyPrimary],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.school_rounded,
-                              color: AppColors.goldAccent,
-                              size: 22,
-                            ),
+                            fit: BoxFit.contain,
                           ),
                           const SizedBox(width: 12),
                           Column(
@@ -1100,10 +1090,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               hintText:
                   'Share a brief story about your career path, fond memories of Waitaki, sports or extracurriculars, or what you are up to now...',
               alignLabelWithHint: true,
-              prefixIcon: Padding(
-                padding: EdgeInsets.only(bottom: 60),
-                child: Icon(Icons.person_outline, size: 20),
-              ),
             ),
           ),
           const SizedBox(height: 16),

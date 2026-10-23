@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/profile.dart';
 import '../../services/profile_service.dart';
+import '../auth/auth_gate.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Profile profile;
@@ -34,6 +35,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _bannerUrl;
   bool _isSaving = false;
   bool _isUploadingBanner = false;
+  bool _isDeleting = false;
 
   static const List<Map<String, String>> _wbhsHouses = [
     {'name': 'Don', 'color': 'Green'},
@@ -205,6 +207,91 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.crimson.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_forever_rounded,
+                color: AppColors.crimson,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Delete Account?',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.navyDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This action is permanent and cannot be undone. All your profile information, Waitaki heritage data, posts, comments, likes, and network connections will be completely erased.',
+          style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.crimson,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text(
+              'Permanently Delete',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isDeleting = true);
+
+    try {
+      await _profileService.deleteAccount();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your account has been permanently deleted.'),
+            backgroundColor: AppColors.navyDark,
+          ),
+        );
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        SnackbarHelper.showError(context, 'Failed to delete account: $e');
+      }
     }
   }
 
@@ -608,8 +695,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _bioController,
-                    minLines: 3,
-                    maxLines: 6,
+                    minLines: 4,
+                    maxLines: 7,
                     maxLength: 800,
                     decoration: const InputDecoration(
                       labelText: 'Bio / Story',
@@ -617,13 +704,89 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           'Share a brief summary of your journey, your time at Waitaki Boys\', career milestones, or what you enjoy doing today...',
                       helperText:
                           'This will be displayed in your profile About section for other Old Boys to read.',
+                      helperMaxLines: 2,
                       alignLabelWithHint: true,
-                      prefixIcon: Padding(
-                        padding: EdgeInsets.only(bottom: 80),
-                        child: Icon(Icons.person_outline, size: 20),
-                      ),
                     ),
                   ),
+
+                  const SizedBox(height: 32),
+                  const Divider(color: AppColors.border),
+                  const SizedBox(height: 24),
+
+                  // Danger Zone: Account Deletion
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppColors.crimson.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.crimson.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: AppColors.crimson,
+                              size: 20,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Danger Zone',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.crimson,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Permanently delete your Waitaki Old Boys Network account, profile, posts, connections, and personal data. This action cannot be reversed.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed: _isDeleting ? null : _confirmDeleteAccount,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.crimson,
+                            side: const BorderSide(color: AppColors.crimson),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: _isDeleting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.crimson,
+                                  ),
+                                )
+                              : const Icon(Icons.delete_forever_rounded, size: 18),
+                          label: Text(
+                            _isDeleting ? 'Deleting Account...' : 'Delete Account',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

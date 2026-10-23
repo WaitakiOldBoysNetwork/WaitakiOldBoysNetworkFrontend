@@ -4,11 +4,15 @@ import '../core/constants/supabase_config.dart';
 import 'supabase_service.dart';
 
 class AuthService {
-  final SupabaseClient _client = SupabaseService.client;
+  SupabaseClient get _client => SupabaseService.client;
 
-  Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges =>
+      SupabaseService.isInitialized
+          ? _client.auth.onAuthStateChange
+          : const Stream.empty();
 
-  User? get currentUser => _client.auth.currentUser;
+  User? get currentUser =>
+      SupabaseService.isInitialized ? _client.auth.currentUser : null;
 
   Future<AuthResponse> signInWithPassword({
     required String email,

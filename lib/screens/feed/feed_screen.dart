@@ -397,12 +397,16 @@ class _FeedScreenState extends State<FeedScreen> {
                   size: 18,
                 ),
                 SizedBox(width: 8),
-                Text(
-                  'Waitaki Heritage',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.navyDark,
+                Expanded(
+                  child: Text(
+                    'Waitaki Heritage',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navyDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -545,46 +549,49 @@ class _FeedScreenState extends State<FeedScreen> {
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                TextButton.icon(
-                  onPressed: _openCreatePost,
-                  icon: const Icon(
-                    Icons.image_outlined,
-                    size: 19,
-                    color: AppColors.navyPrimary,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  TextButton.icon(
+                    onPressed: _openCreatePost,
+                    icon: const Icon(
+                      Icons.image_outlined,
+                      size: 19,
+                      color: AppColors.navyPrimary,
+                    ),
+                    label: const Text(
+                      'Photo',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  label: const Text(
-                    'Photo',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  TextButton.icon(
+                    onPressed: _openCreatePost,
+                    icon: const Icon(
+                      Icons.event_note_outlined,
+                      size: 19,
+                      color: AppColors.goldDark,
+                    ),
+                    label: const Text(
+                      'Reunion / Event',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                ),
-                TextButton.icon(
-                  onPressed: _openCreatePost,
-                  icon: const Icon(
-                    Icons.event_note_outlined,
-                    size: 19,
-                    color: AppColors.goldDark,
+                  TextButton.icon(
+                    onPressed: _openCreatePost,
+                    icon: const Icon(
+                      Icons.article_outlined,
+                      size: 19,
+                      color: AppColors.crimson,
+                    ),
+                    label: const Text(
+                      'Achievement',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  label: const Text(
-                    'Reunion / Event',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: _openCreatePost,
-                  icon: const Icon(
-                    Icons.article_outlined,
-                    size: 19,
-                    color: AppColors.crimson,
-                  ),
-                  label: const Text(
-                    'Achievement',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -603,12 +610,16 @@ class _FeedScreenState extends State<FeedScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Old Boys to Connect With',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.navyDark,
+                const Expanded(
+                  child: Text(
+                    'Old Boys to Connect With',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navyDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 InkWell(
@@ -776,12 +787,16 @@ class _FeedScreenState extends State<FeedScreen> {
                   size: 20,
                 ),
                 SizedBox(width: 8),
-                Text(
-                  'WBHS Noticeboard',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.navyDark,
+                Expanded(
+                  child: Text(
+                    'WBHS Noticeboard',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navyDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

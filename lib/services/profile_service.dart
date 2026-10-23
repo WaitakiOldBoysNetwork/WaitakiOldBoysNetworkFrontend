@@ -472,4 +472,53 @@ class ProfileService {
           .or('id.eq.$userId,user_id.eq.$userId');
     } catch (_) {}
   }
+
+  /// Permanently deletes the current user's profile, content, connections, and account.
+  Future<void> deleteAccount() async {
+    if (!SupabaseService.isInitialized) return;
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) throw Exception('No authenticated user found');
+
+    // 1. Attempt secure server-side RPC deletion
+    try {
+      await _client.rpc('delete_user_account');
+    } catch (_) {
+      // 2. Client-side fallback cleanup in case RPC is not yet applied
+      try {
+        await _client.from('post_comments').delete().eq('user_id', userId);
+      } catch (_) {}
+      try {
+        await _client.from('post_likes').delete().eq('user_id', userId);
+      } catch (_) {}
+      try {
+        await _client.from('posts').delete().eq('author_id', userId);
+      } catch (_) {}
+      try {
+        await _client
+            .from('connections')
+            .delete()
+            .or('requester_id.eq.$userId,recipient_id.eq.$userId');
+      } catch (_) {}
+      try {
+        await _client
+            .from('profiles')
+            .delete()
+            .or('id.eq.$userId,user_id.eq.$userId');
+      } catch (_) {}
+    }
+
+    // 3. Clear local device preferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('sp_user_banner_$userId');
+      await prefs.remove('user_banner_$userId');
+      await prefs.remove('sp_onboarding_completed_$userId');
+      await prefs.remove('onboarding_skipped_$userId');
+    } catch (_) {}
+
+    // 4. Sign out
+    try {
+      await _client.auth.signOut();
+    } catch (_) {}
+  }
 }

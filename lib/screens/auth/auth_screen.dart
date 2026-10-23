@@ -123,36 +123,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     children: [
                       // Header & WBHS Crest Representation
                       Center(
-                        child: Container(
-                          width: 68,
-                          height: 68,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppColors.navyPrimary,
-                                AppColors.navyLight,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.navyPrimary.withValues(
-                                  alpha: 0.2,
-                                ),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.school_rounded,
-                              color: AppColors.goldAccent,
-                              size: 36,
-                            ),
-                          ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          height: 72,
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(height: 16),

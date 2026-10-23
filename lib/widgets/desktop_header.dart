@@ -82,31 +82,10 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                     child: Row(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.navyDark, AppColors.navyPrimary],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.navyPrimary.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.school_rounded,
-                              color: AppColors.goldAccent,
-                              size: 24,
-                            ),
-                          ),
+                        Image.asset(
+                          'assets/images/logo.png',
+                          height: 42,
+                          fit: BoxFit.contain,
                         ),
                         const SizedBox(width: 12),
                         Column(

@@ -14,11 +14,14 @@ class SupabaseService {
 
   static SupabaseClient get client => Supabase.instance.client;
 
-  static User? get currentUser => client.auth.currentUser;
+  static User? get currentUser =>
+      isInitialized ? client.auth.currentUser : null;
 
-  static String? get currentUserId => client.auth.currentUser?.id;
+  static String? get currentUserId =>
+      isInitialized ? client.auth.currentUser?.id : null;
 
-  static bool get isAuthenticated => client.auth.currentSession != null;
+  static bool get isAuthenticated =>
+      isInitialized ? (client.auth.currentSession != null) : false;
 
   static Future<void> initialize() async {
     await SupabaseConfig.loadPersisted();

@@ -7,9 +7,10 @@ import '../models/profile.dart';
 import 'supabase_service.dart';
 
 class FeedService {
-  final SupabaseClient _client = SupabaseService.client;
+  SupabaseClient get _client => SupabaseService.client;
 
   Future<List<Post>> getPosts({int limit = 50}) async {
+    if (!SupabaseService.isInitialized) return [];
     final currentUserId = SupabaseService.currentUserId;
 
     // Fetch posts with nested likes and comments
