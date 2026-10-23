@@ -46,7 +46,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       _loadDirectory();
     });
   }

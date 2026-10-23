@@ -38,10 +38,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
 
   Future<void> _checkPendingRequests() async {
     try {
-      final pending = await _directoryService.getPendingRequestsForMe();
+      final count = await _directoryService.getPendingRequestCount();
       if (mounted) {
         setState(() {
-          _pendingCount = pending.length;
+          _pendingCount = count;
         });
       }
     } catch (_) {}

@@ -8,16 +8,36 @@ import 'supabase_service.dart';
 class ProfileService {
   SupabaseClient get _client => SupabaseService.client;
 
-  Future<Profile?> getCurrentProfile() async {
+  // In-memory cache for the current user's profile to prevent redundant REST calls on navigation
+  static Profile? _cachedCurrentProfile;
+  static DateTime? _cacheTimestamp;
+  static const _cacheDuration = Duration(minutes: 3);
+
+  /// Explicitly clear in-memory profile cache
+  static void invalidateCache() {
+    _cachedCurrentProfile = null;
+    _cacheTimestamp = null;
+  }
+
+  Future<Profile?> getCurrentProfile({bool forceRefresh = false}) async {
     if (!SupabaseService.isInitialized) return null;
     final userId = SupabaseService.currentUserId;
     if (userId == null) return null;
+
+    if (!forceRefresh &&
+        _cachedCurrentProfile != null &&
+        _cacheTimestamp != null &&
+        DateTime.now().difference(_cacheTimestamp!) < _cacheDuration) {
+      return _cachedCurrentProfile;
+    }
 
     try {
       // Profiles might match by id or user_id
       final response = await _client
           .from('profiles')
-          .select()
+          .select(
+            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for',
+          )
           .or('id.eq.$userId,user_id.eq.$userId')
           .maybeSingle();
 
@@ -30,6 +50,8 @@ class ProfileService {
             profile = profile.copyWith(bannerUrl: fallbackBanner);
           }
         }
+        _cachedCurrentProfile = profile;
+        _cacheTimestamp = DateTime.now();
         return profile;
       }
 
@@ -38,7 +60,7 @@ class ProfileService {
       final authUser = SupabaseService.currentUser;
       final meta = authUser?.userMetadata;
       final fallbackBanner = await _getFallbackBanner(userId);
-      return Profile(
+      final placeholder = Profile(
         id: userId,
         userId: userId,
         firstName: meta?['first_name']?.toString() ?? '',
@@ -54,8 +76,11 @@ class ProfileService {
             ? int.tryParse(meta!['grad_year'].toString())
             : null,
       );
+      _cachedCurrentProfile = placeholder;
+      _cacheTimestamp = DateTime.now();
+      return placeholder;
     } catch (e) {
-      return null;
+      return _cachedCurrentProfile;
     }
   }
 
@@ -64,7 +89,9 @@ class ProfileService {
     try {
       final response = await _client
           .from('profiles')
-          .select()
+          .select(
+            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for',
+          )
           .or('id.eq.$id,user_id.eq.$id')
           .maybeSingle();
 
@@ -192,6 +219,7 @@ class ProfileService {
             .from('profiles')
             .update(data)
             .or('id.eq.$userId,user_id.eq.$userId');
+        invalidateCache();
         return;
       }
 
@@ -212,6 +240,7 @@ class ProfileService {
                 ...data,
               })
               .ilike('Email', userEmail.trim());
+          invalidateCache();
           return;
         }
       }
@@ -221,6 +250,7 @@ class ProfileService {
         'id': userId,
         ...data,
       });
+      invalidateCache();
     } catch (e) {
       // If banner_url column does not exist in the database table yet, retry without banner_url
       if (e.toString().contains('banner_url') && data.containsKey('banner_url')) {
@@ -230,12 +260,14 @@ class ProfileService {
               .from('profiles')
               .update(data)
               .or('id.eq.$userId,user_id.eq.$userId');
+          invalidateCache();
           return;
         }
         await _client.from('profiles').insert({
           'id': userId,
           ...data,
         });
+        invalidateCache();
         return;
       }
       rethrow;
@@ -376,6 +408,7 @@ class ProfileService {
         ...avatarData,
       });
     }
+    invalidateCache();
 
     return publicUrl;
   }
@@ -443,6 +476,7 @@ class ProfileService {
       // Gracefully continue if banner_url column does not exist in table yet;
       // fallback in userMetadata & SharedPreferences ensures it persists seamlessly.
     }
+    invalidateCache();
 
     return publicUrl;
   }
@@ -471,10 +505,12 @@ class ProfileService {
           .update({'banner_url': null})
           .or('id.eq.$userId,user_id.eq.$userId');
     } catch (_) {}
+    invalidateCache();
   }
 
   /// Permanently deletes the current user's profile, content, connections, and account.
   Future<void> deleteAccount() async {
+    invalidateCache();
     if (!SupabaseService.isInitialized) return;
     final userId = SupabaseService.currentUserId;
     if (userId == null) throw Exception('No authenticated user found');

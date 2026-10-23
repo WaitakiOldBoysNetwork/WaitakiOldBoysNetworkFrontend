@@ -6,15 +6,27 @@ import 'supabase_service.dart';
 class DirectoryService {
   SupabaseClient get _client => SupabaseService.client;
 
+  // In-memory cache for connections to avoid multiple roundtrips per screen navigation
+  static Map<String, Connection>? _cachedConnections;
+  static DateTime? _connectionsTimestamp;
+  static const _connectionsCacheDuration = Duration(seconds: 60);
+
+  static void invalidateConnectionsCache() {
+    _cachedConnections = null;
+    _connectionsTimestamp = null;
+  }
+
   /// Searches Old Boys across both registered accounts and imported records
   Future<List<Profile>> searchOldBoys({
     String? query,
     int? gradYear,
     String? city,
-    int limit = 100,
+    int limit = 40,
   }) async {
     if (!SupabaseService.isInitialized) return [];
-    var req = _client.from('profiles').select();
+    var req = _client.from('profiles').select(
+      'id, user_id, first_name, last_name, headline, city, house, grad_year, avatar_url, industry, company, Name, "Year left School", Region, House, Industry, Email',
+    );
 
     if (gradYear != null) {
       req = req.or('grad_year.eq.$gradYear,"Year left School".eq.$gradYear');
@@ -55,7 +67,7 @@ class DirectoryService {
     String? query,
     int? gradYear,
     String? city,
-    int limit = 100,
+    int limit = 40,
   }) =>
       searchOldBoys(
         query: query,
@@ -64,13 +76,20 @@ class DirectoryService {
         limit: limit,
       );
 
-  Future<Map<String, Connection>> getMyConnections() async {
+  Future<Map<String, Connection>> getMyConnections({bool forceRefresh = false}) async {
     final userId = SupabaseService.currentUserId;
     if (userId == null) return {};
 
+    if (!forceRefresh &&
+        _cachedConnections != null &&
+        _connectionsTimestamp != null &&
+        DateTime.now().difference(_connectionsTimestamp!) < _connectionsCacheDuration) {
+      return _cachedConnections!;
+    }
+
     final raw = await _client
         .from('connections')
-        .select()
+        .select('id, requester_id, recipient_id, status, created_at, updated_at')
         .or('requester_id.eq.$userId,recipient_id.eq.$userId');
 
     final map = <String, Connection>{};
@@ -79,7 +98,27 @@ class DirectoryService {
       final otherId = conn.requesterId == userId ? conn.recipientId : conn.requesterId;
       map[otherId] = conn;
     }
+    _cachedConnections = map;
+    _connectionsTimestamp = DateTime.now();
     return map;
+  }
+
+  /// Lightweight count query specifically for navigation badge.
+  /// Avoids fetching large rows or resolving requester profiles.
+  Future<int> getPendingRequestCount() async {
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return 0;
+
+    try {
+      final raw = await _client
+          .from('connections')
+          .select('id')
+          .eq('recipient_id', userId)
+          .eq('status', 'pending');
+      return raw.length;
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<List<Connection>> getPendingRequestsForMe() async {
@@ -88,7 +127,7 @@ class DirectoryService {
 
     final raw = await _client
         .from('connections')
-        .select()
+        .select('id, requester_id, recipient_id, status, created_at, updated_at')
         .eq('recipient_id', userId)
         .eq('status', 'pending');
 
@@ -105,7 +144,9 @@ class DirectoryService {
       try {
         final profilesRes = await _client
             .from('profiles')
-            .select()
+            .select(
+              'id, user_id, first_name, last_name, headline, avatar_url, house, grad_year',
+            )
             .filter('id', 'in', requesterIds);
 
         for (final p in profilesRes) {
@@ -140,6 +181,7 @@ class DirectoryService {
       'recipient_id': recipientId,
       'status': 'pending',
     });
+    invalidateConnectionsCache();
   }
 
   Future<void> respondToConnectionRequest({
@@ -150,5 +192,6 @@ class DirectoryService {
       'status': status.toDbString(),
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', connectionId);
+    invalidateConnectionsCache();
   }
 }

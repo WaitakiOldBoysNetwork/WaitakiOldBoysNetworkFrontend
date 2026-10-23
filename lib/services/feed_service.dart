@@ -9,60 +9,72 @@ import 'supabase_service.dart';
 class FeedService {
   SupabaseClient get _client => SupabaseService.client;
 
-  Future<List<Post>> getPosts({int limit = 50}) async {
+  // In-memory cache for author profiles across feed renders
+  static final Map<String, Profile> _authorCache = {};
+
+  Future<List<Post>> getPosts({int limit = 25}) async {
     if (!SupabaseService.isInitialized) return [];
     final currentUserId = SupabaseService.currentUserId;
 
     // Fetch posts with nested likes and comments
     final rawPosts = await _client
         .from('posts')
-        .select('*, post_likes(user_id), post_comments(id)')
+        .select(
+          'id, author_id, content, image_url, created_at, post_likes(user_id), post_comments(id)',
+        )
         .order('created_at', ascending: false)
         .limit(limit);
 
     if (rawPosts.isEmpty) return [];
 
     // Collect all author IDs to query their profiles
-    final authorIds = <String>{};
+    final authorIdsToFetch = <String>{};
     for (final p in rawPosts) {
       final authorId = p['author_id']?.toString();
-      if (authorId != null && authorId.isNotEmpty) {
-        authorIds.add(authorId);
+      if (authorId != null &&
+          authorId.isNotEmpty &&
+          !_authorCache.containsKey(authorId)) {
+        authorIdsToFetch.add(authorId);
       }
     }
 
-    final profileMap = <String, Profile>{};
-    if (authorIds.isNotEmpty) {
+    if (authorIdsToFetch.isNotEmpty) {
       // First pass: try matching profiles by id
       try {
         final profilesRes = await _client
             .from('profiles')
-            .select()
-            .filter('id', 'in', authorIds.toList());
+            .select(
+              'id, user_id, first_name, last_name, headline, house, grad_year, avatar_url',
+            )
+            .filter('id', 'in', authorIdsToFetch.toList());
 
         for (final item in profilesRes) {
           final profile = Profile.fromJson(item);
-          profileMap[profile.id] = profile;
+          _authorCache[profile.id] = profile;
           if (profile.userId != null) {
-            profileMap[profile.userId!] = profile;
+            _authorCache[profile.userId!] = profile;
           }
         }
       } catch (_) {}
 
       // Second pass: for any author IDs not yet resolved, try by user_id
-      final unresolvedIds = authorIds.where((id) => !profileMap.containsKey(id)).toList();
+      final unresolvedIds = authorIdsToFetch
+          .where((id) => !_authorCache.containsKey(id))
+          .toList();
       if (unresolvedIds.isNotEmpty) {
         try {
           final profilesRes2 = await _client
               .from('profiles')
-              .select()
+              .select(
+                'id, user_id, first_name, last_name, headline, house, grad_year, avatar_url',
+              )
               .filter('user_id', 'in', unresolvedIds);
 
           for (final item in profilesRes2) {
             final profile = Profile.fromJson(item);
-            profileMap[profile.id] = profile;
+            _authorCache[profile.id] = profile;
             if (profile.userId != null) {
-              profileMap[profile.userId!] = profile;
+              _authorCache[profile.userId!] = profile;
             }
           }
         } catch (_) {}
@@ -71,7 +83,7 @@ class FeedService {
 
     return rawPosts.map<Post>((json) {
       final post = Post.fromJson(json, currentUserId: currentUserId);
-      final matchedProfile = profileMap[post.authorId];
+      final matchedProfile = _authorCache[post.authorId];
       if (matchedProfile != null) {
         return post.copyWith(author: matchedProfile);
       }
@@ -198,7 +210,9 @@ class FeedService {
       try {
         final profilesRes = await _client
             .from('profiles')
-            .select()
+            .select(
+              'id, user_id, first_name, last_name, headline, avatar_url',
+            )
             .filter('id', 'in', userIds);
 
         for (final p in profilesRes) {
@@ -214,7 +228,9 @@ class FeedService {
         try {
           final profilesRes2 = await _client
               .from('profiles')
-              .select()
+              .select(
+                'id, user_id, first_name, last_name, headline, avatar_url',
+              )
               .filter('user_id', 'in', unresolvedIds);
 
           for (final p in profilesRes2) {
