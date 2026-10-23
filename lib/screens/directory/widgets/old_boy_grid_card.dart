@@ -35,12 +35,23 @@ class OldBoyGridCard extends StatelessWidget {
             // Top Accent Ribbon
             Container(
               height: 48,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
                   colors: [AppColors.navyDark, AppColors.navyPrimary],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
+                image: (profile.bannerUrl != null &&
+                        profile.bannerUrl!.isNotEmpty)
+                    ? DecorationImage(
+                        image: CachedNetworkImageProvider(profile.bannerUrl!),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withValues(alpha: 0.35),
+                          BlendMode.darken,
+                        ),
+                      )
+                    : null,
               ),
               child: Stack(
                 children: [
@@ -168,11 +179,23 @@ class OldBoyGridCard extends StatelessWidget {
 
                         const SizedBox(height: 6),
 
-                        // Headline
+                        // Headline or Bio excerpt
                         if (profile.headline != null &&
                             profile.headline!.trim().isNotEmpty)
                           Text(
                             profile.headline!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        else if (profile.bio != null &&
+                            profile.bio!.trim().isNotEmpty)
+                          Text(
+                            profile.bio!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 12,

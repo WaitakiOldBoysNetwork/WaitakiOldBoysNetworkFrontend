@@ -119,6 +119,41 @@ class FeedService {
     return Post.fromJson(response, currentUserId: userId);
   }
 
+  Future<void> deletePost({
+    required String postId,
+    String? imageUrl,
+  }) async {
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) throw Exception('Must be logged in to delete post');
+
+    // 1. Delete post row from Supabase
+    // Cascade constraints automatically clean up likes and comments.
+    // Supabase RLS enforces that users can only delete their own posts.
+    await _client.from('posts').delete().eq('id', postId);
+
+    // 2. Best-effort cleanup of associated storage media if present
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        final uri = Uri.tryParse(imageUrl);
+        if (uri != null && uri.pathSegments.isNotEmpty) {
+          final bucketIndex =
+              uri.pathSegments.indexOf(SupabaseConfig.storageBucket);
+          if (bucketIndex != -1 &&
+              bucketIndex + 1 < uri.pathSegments.length) {
+            final filePath =
+                uri.pathSegments.sublist(bucketIndex + 1).join('/');
+            await _client
+                .storage
+                .from(SupabaseConfig.storageBucket)
+                .remove([filePath]);
+          }
+        }
+      } catch (_) {
+        // Storage cleanup failures shouldn't prevent successful post deletion UX
+      }
+    }
+  }
+
   Future<void> toggleLike({
     required String postId,
     required bool currentlyLiked,

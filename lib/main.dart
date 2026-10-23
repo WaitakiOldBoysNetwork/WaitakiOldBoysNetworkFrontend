@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/auth/auth_gate.dart';
@@ -21,6 +22,14 @@ class WaitakiOldBoysApp extends StatelessWidget {
       title: 'Waitaki Old Boys\' Network',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.touch,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+      ),
       home: const AuthGate(),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -9,13 +10,20 @@ import '../../../models/post_comment.dart';
 import '../../../models/profile.dart';
 import '../../../services/feed_service.dart';
 import '../../../services/profile_service.dart';
+import '../../../services/supabase_service.dart';
 import '../../profile/profile_screen.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
   final VoidCallback? onPostUpdated;
+  final VoidCallback? onPostDeleted;
 
-  const PostCard({super.key, required this.post, this.onPostUpdated});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.onPostUpdated,
+    this.onPostDeleted,
+  });
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -25,6 +33,8 @@ class _PostCardState extends State<PostCard> {
   final _feedService = FeedService();
   final _profileService = ProfileService();
   final _commentController = TextEditingController();
+
+  bool _isDeleting = false;
 
   late bool _isLiked;
   late int _likesCount;
@@ -146,6 +156,104 @@ class _PostCardState extends State<PostCard> {
     }
   }
 
+  void _copyPostText() {
+    if (widget.post.content.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: widget.post.content));
+    SnackbarHelper.showSuccess(context, 'Post text copied to clipboard');
+  }
+
+  Future<void> _confirmAndDeletePost() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.crimson.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.crimson,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Delete Post',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.navyDark,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to delete this post? This action cannot be undone.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.crimson,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Delete',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await _feedService.deletePost(
+        postId: widget.post.id,
+        imageUrl: widget.post.imageUrl,
+      );
+      if (mounted) {
+        SnackbarHelper.showSuccess(context, 'Post deleted');
+        widget.onPostDeleted?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        SnackbarHelper.showError(context, 'Failed to delete post: $e');
+      }
+    }
+  }
+
   void _navigateToAuthorProfile(Profile? author) {
     if (author == null) return;
     Navigator.push(
@@ -162,10 +270,17 @@ class _PostCardState extends State<PostCard> {
   @override
   Widget build(BuildContext context) {
     final author = widget.post.author;
+    final currentUserId = SupabaseService.currentUserId;
+    final isMyPost = widget.post.isAuthoredBy(currentUserId);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: _isDeleting ? 0.5 : 1.0,
+      child: IgnorePointer(
+        ignoring: _isDeleting,
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Author Header
@@ -271,6 +386,95 @@ class _PostCardState extends State<PostCard> {
                     ),
                   ),
                 ),
+
+                // Post options menu (Delete for author, Copy text)
+                if (isMyPost || widget.post.content.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  if (_isDeleting)
+                    const Padding(
+                      padding: EdgeInsets.all(6.0),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.crimson,
+                        ),
+                      ),
+                    )
+                  else
+                    PopupMenuButton<String>(
+                      tooltip: 'Post options',
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(
+                        Icons.more_horiz_rounded,
+                        color: AppColors.textMuted,
+                        size: 20,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: AppColors.border),
+                      ),
+                      offset: const Offset(0, 36),
+                      onSelected: (val) {
+                        if (val == 'delete') {
+                          _confirmAndDeletePost();
+                        } else if (val == 'copy') {
+                          _copyPostText();
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        if (widget.post.content.isNotEmpty)
+                          const PopupMenuItem<String>(
+                            value: 'copy',
+                            height: 38,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Copy text',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (isMyPost) ...[
+                          if (widget.post.content.isNotEmpty)
+                            const PopupMenuDivider(height: 1),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            height: 38,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 17,
+                                  color: AppColors.crimson,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Delete post',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.crimson,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                ],
               ],
             ),
           ),
@@ -569,6 +773,8 @@ class _PostCardState extends State<PostCard> {
           ],
         ],
       ),
+    ),
+    ),
     );
   }
 

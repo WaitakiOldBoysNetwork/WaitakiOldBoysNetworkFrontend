@@ -69,5 +69,20 @@ void main() {
       expect(SupabaseConfig.url, equals(modernUrl));
       expect(SupabaseConfig.publishableKey, equals(modernKey));
     });
+
+    test('saveRuntimeCredentials sanitizes trailing slashes and whitespace from URL', () async {
+      await SupabaseConfig.saveRuntimeCredentials(
+        url: '  https://trailing-slash.supabase.co///  ',
+        publishableKey: 'sb_publishable_test_key',
+      );
+
+      expect(SupabaseConfig.url, equals('https://trailing-slash.supabase.co'));
+    });
+
+    test('desktop and web platform helpers and authCallbackUrl return valid values', () {
+      expect(SupabaseConfig.authCallbackUrl, isNotEmpty);
+      expect(SupabaseConfig.isWeb, isA<bool>());
+      expect(SupabaseConfig.isDesktop, isA<bool>());
+    });
   });
 }

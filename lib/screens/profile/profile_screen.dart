@@ -32,6 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Profile? _profile;
   bool _isLoading = true;
   bool _isUploadingAvatar = false;
+  bool _isUploadingBanner = false;
   bool _isConnecting = false;
   ConnectionStatus _connectionStatus = ConnectionStatus.none;
 
@@ -156,6 +157,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _pickAndUploadBanner() async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 600,
+        imageQuality: 85,
+      );
+
+      if (file == null) return;
+
+      setState(() => _isUploadingBanner = true);
+
+      final bytes = await file.readAsBytes();
+      final name = file.name;
+      final ext = name.contains('.') ? name.split('.').last : 'jpg';
+
+      final publicUrl = await _profileService.uploadBanner(bytes, ext);
+
+      if (mounted) {
+        setState(() {
+          if (_profile != null) {
+            _profile = _profile!.copyWith(bannerUrl: publicUrl);
+          }
+        });
+        SnackbarHelper.showSuccess(context, 'Banner updated!');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to upload banner: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingBanner = false);
+    }
+  }
+
+  Future<void> _handleRemoveBanner() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Banner'),
+        content: const Text(
+          'Reset your banner back to the default Waitaki Boys\' heritage theme?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.crimson),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isUploadingBanner = true);
+    try {
+      await _profileService.removeBanner();
+      if (mounted) {
+        setState(() {
+          if (_profile != null) {
+            _profile = _profile!.copyWith(bannerUrl: '');
+          }
+        });
+        SnackbarHelper.showSuccess(context, 'Banner reset to default theme');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Failed to remove banner: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingBanner = false);
+    }
+  }
+
+  void _showBannerOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.navyPrimary,
+              ),
+              title: const Text('Upload new banner photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUploadBanner();
+              },
+            ),
+            if (_profile?.bannerUrl != null && _profile!.bannerUrl!.isNotEmpty)
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.crimson,
+                ),
+                title: const Text(
+                  'Remove banner photo',
+                  style: TextStyle(color: AppColors.crimson),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleRemoveBanner();
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSignOut() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -230,9 +357,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
-                      // Navy & Gold Banner
+                      // Navy & Gold / Custom Photo Banner
                       Container(
-                        height: 120,
+                        height: 145,
+                        clipBehavior: Clip.antiAlias,
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             colors: [AppColors.navyDark, AppColors.navyPrimary],
@@ -241,18 +369,134 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            Positioned(
-                              right: 20,
-                              top: 20,
-                              child: Icon(
-                                Icons.school,
-                                size: 80,
-                                color: AppColors.goldAccent.withValues(
-                                  alpha: 0.12,
+                            // Custom Banner Image if set
+                            if (profile?.bannerUrl != null &&
+                                profile!.bannerUrl!.isNotEmpty)
+                              CachedNetworkImage(
+                                imageUrl: profile.bannerUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: AppColors.navyDark,
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.navyDark,
+                                        AppColors.navyPrimary,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // Vignette overlay for contrast and depth
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.25),
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.35),
+                                  ],
                                 ),
                               ),
                             ),
+
+                            // Waitaki Crest Watermark
+                            if (profile?.bannerUrl == null ||
+                                profile!.bannerUrl!.isEmpty)
+                              Positioned(
+                                right: 20,
+                                top: 20,
+                                child: Icon(
+                                  Icons.school,
+                                  size: 80,
+                                  color: AppColors.goldAccent.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                ),
+                              ),
+
+                            // Edit Banner Button (for profile owner)
+                            if (isSelf)
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _isUploadingBanner
+                                        ? null
+                                        : _showBannerOptions,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.55),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.35,
+                                          ),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (_isUploadingBanner)
+                                            const SizedBox(
+                                              width: 14,
+                                              height: 14,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          else
+                                            const Icon(
+                                              Icons.camera_alt_outlined,
+                                              size: 15,
+                                              color: Colors.white,
+                                            ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            (profile?.bannerUrl != null &&
+                                                    profile!.bannerUrl!.isNotEmpty)
+                                                ? 'Edit Banner'
+                                                : 'Add Banner',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -468,6 +712,146 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
+                // About / Bio Card
+                if (profile?.bio != null && profile!.bio!.trim().isNotEmpty)
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: const [
+                                  Icon(
+                                    Icons.person_outline,
+                                    color: AppColors.navyPrimary,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'About',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.navyDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (isSelf)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 18,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  tooltip: 'Edit Bio',
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () async {
+                                    final updated = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => EditProfileScreen(
+                                          profile: profile,
+                                        ),
+                                      ),
+                                    );
+                                    if (updated == true) _loadProfile();
+                                  },
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            profile.bio!,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              color: AppColors.navyDark,
+                              height: 1.55,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (isSelf)
+                  Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: InkWell(
+                      onTap: () async {
+                        if (profile != null) {
+                          final updated = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditProfileScreen(profile: profile),
+                            ),
+                          );
+                          if (updated == true) _loadProfile();
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.navyPrimary.withValues(
+                                  alpha: 0.08,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.edit_note_rounded,
+                                color: AppColors.navyPrimary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Add a bio to your profile',
+                                    style: TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.navyDark,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Share your story, memories from WBHS, or what you\'re up to today.',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: AppColors.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Details & School Info Card
                 if (profile != null) _buildProfileDetailsCard(profile),
 
@@ -565,9 +949,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     if (p.lookingFor != null && p.lookingFor!.trim().isNotEmpty) {
       items.add(_buildInfoRow(Icons.search_outlined, 'Looking For', p.lookingFor!));
-    }
-    if (p.bio != null && p.bio!.trim().isNotEmpty) {
-      items.add(_buildInfoRow(Icons.person_outline, 'Bio', p.bio!));
     }
     if (p.email != null && p.email!.trim().isNotEmpty) {
       items.add(_buildInfoRow(Icons.email_outlined, 'Email', p.email!));

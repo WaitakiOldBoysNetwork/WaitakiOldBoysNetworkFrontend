@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   grad_year int,
   city text,
   avatar_url text,
+  banner_url text,
   house text,
   industry text,
   company text,
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   "Short Bio" text,
   "Full Bio" text,
   "Profile Photo" text,
+  "Banner Photo" text,
   "Email" text,
   "Phone" text,
   "Open to helping" text,
@@ -79,6 +81,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS headline text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS grad_year int;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS city text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banner_url text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS house text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS industry text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS company text;
@@ -101,6 +104,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Company / Organisation" te
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Short Bio" text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Full Bio" text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Profile Photo" text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Banner Photo" text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Email" text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Phone" text;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "Open to helping" text;

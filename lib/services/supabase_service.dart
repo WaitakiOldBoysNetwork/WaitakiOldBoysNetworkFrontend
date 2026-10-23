@@ -27,6 +27,9 @@ class SupabaseService {
       await Supabase.initialize(
         url: SupabaseConfig.url,
         publishableKey: SupabaseConfig.publishableKey,
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+        ),
       );
     }
   }
@@ -42,6 +45,12 @@ class SupabaseService {
       anonKey: key,
       publishableKey: key,
     );
-    await Supabase.initialize(url: url, publishableKey: key);
+    await Supabase.initialize(
+      url: url,
+      publishableKey: key,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
+    );
   }
 }

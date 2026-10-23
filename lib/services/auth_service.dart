@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/constants/supabase_config.dart';
 import 'supabase_service.dart';
 
 class AuthService {
@@ -45,6 +46,7 @@ class AuthService {
     final response = await _client.auth.signUp(
       email: email.trim(),
       password: password,
+      emailRedirectTo: SupabaseConfig.authCallbackUrl,
       data: {
         if (firstName != null) 'first_name': firstName.trim(),
         if (lastName != null) 'last_name': lastName.trim(),
@@ -137,7 +139,10 @@ class AuthService {
   }
 
   Future<void> sendMagicLink({required String email}) async {
-    await _client.auth.signInWithOtp(email: email.trim());
+    await _client.auth.signInWithOtp(
+      email: email.trim(),
+      emailRedirectTo: SupabaseConfig.authCallbackUrl,
+    );
   }
 
   Future<void> signOut() async {

@@ -111,6 +111,18 @@ class AlumniCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                    ] else if (profile.bio != null &&
+                        profile.bio!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        profile.bio!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                     if (profile.city != null &&
                         profile.city!.trim().isNotEmpty) ...[

@@ -73,6 +73,14 @@ class Post {
     );
   }
 
+  /// Checks if the given user ID matches the author of this post
+  bool isAuthoredBy(String? currentUserId) {
+    if (currentUserId == null || currentUserId.isEmpty) return false;
+    return authorId == currentUserId ||
+        author?.userId == currentUserId ||
+        author?.id == currentUserId;
+  }
+
   Post copyWith({
     String? id,
     String? authorId,

@@ -130,90 +130,101 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 980;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1240),
-          child: RefreshIndicator(
-            onRefresh: _loadData,
-            color: AppColors.navyPrimary,
-            child: _isLoading
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: CircularProgressIndicator(color: AppColors.navyPrimary),
-                    ),
-                  )
-                : _errorMessage != null
-                    ? _buildErrorView()
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 24,
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1. Left Column (Desktop Profile & Heritage)
-                            if (isDesktop) ...[
-                              SizedBox(
-                                width: 270,
-                                child: Column(
-                                  children: [
-                                    _buildLeftProfileCard(),
-                                    const SizedBox(height: 16),
-                                    _buildHeritageLinksCard(),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                            ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 1000;
+          final showRight = constraints.maxWidth >= 700;
 
-                            // 2. Center Column (Composer & Feed Stream)
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  _buildDesktopComposerCard(),
-                                  const SizedBox(height: 16),
-                                  if (_posts.isEmpty)
-                                    _buildEmptyFeedCard()
-                                  else
-                                    ..._posts.map(
-                                      (post) => PostCard(
-                                        key: ValueKey(post.id),
-                                        post: post,
-                                        onPostUpdated: _loadData,
-                                      ),
-                                    ),
-                                ],
-                              ),
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1240),
+              child: RefreshIndicator(
+                onRefresh: _loadData,
+                color: AppColors.navyPrimary,
+                child: _isLoading
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(
+                              color: AppColors.navyPrimary),
+                        ),
+                      )
+                    : _errorMessage != null
+                        ? _buildErrorView()
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 24,
                             ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 1. Left Column (Desktop Profile & Heritage)
+                                if (isWide) ...[
+                                  SizedBox(
+                                    width: 250,
+                                    child: Column(
+                                      children: [
+                                        _buildLeftProfileCard(),
+                                        const SizedBox(height: 16),
+                                        _buildHeritageLinksCard(),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                ],
 
-                            // 3. Right Column (Desktop Recommendations & Notices)
-                            if (isDesktop) ...[
-                              const SizedBox(width: 24),
-                              SizedBox(
-                                width: 290,
-                                child: Column(
-                                  children: [
-                                    _buildRightSuggestionsCard(),
-                                    const SizedBox(height: 16),
-                                    _buildNoticeboardCard(),
-                                    const SizedBox(height: 16),
-                                    _buildDesktopFooter(),
-                                  ],
+                                // 2. Center Column (Composer & Feed Stream)
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      _buildDesktopComposerCard(),
+                                      const SizedBox(height: 16),
+                                      if (_posts.isEmpty)
+                                        _buildEmptyFeedCard()
+                                      else
+                                        ..._posts.map(
+                                          (post) => PostCard(
+                                            key: ValueKey(post.id),
+                                            post: post,
+                                            onPostUpdated: _loadData,
+                                            onPostDeleted: () {
+                                              setState(() {
+                                                _posts.removeWhere(
+                                                    (p) => p.id == post.id);
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-          ),
-        ),
+
+                                // 3. Right Column (Desktop Recommendations & Notices)
+                                if (showRight) ...[
+                                  const SizedBox(width: 20),
+                                  SizedBox(
+                                    width: 280,
+                                    child: Column(
+                                      children: [
+                                        _buildRightSuggestionsCard(),
+                                        const SizedBox(height: 16),
+                                        _buildNoticeboardCard(),
+                                        const SizedBox(height: 16),
+                                        _buildDesktopFooter(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

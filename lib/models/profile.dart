@@ -7,6 +7,7 @@ class Profile {
   final int? gradYear;
   final String? city;
   final String? avatarUrl;
+  final String? bannerUrl;
   final String? house;
   final String? industry;
   final String? company;
@@ -26,6 +27,7 @@ class Profile {
     this.gradYear,
     this.city,
     this.avatarUrl,
+    this.bannerUrl,
     this.house,
     this.industry,
     this.company,
@@ -102,6 +104,20 @@ class Profile {
       }
     }
 
+    // Parse banner URL from banner_url or Airtable Banner Photo format
+    String? bannerPhotoUrl = json['banner_url']?.toString();
+    if (bannerPhotoUrl == null || bannerPhotoUrl.isEmpty) {
+      final rawBanner = json['Banner Photo']?.toString() ?? json['banner']?.toString();
+      if (rawBanner != null && rawBanner.isNotEmpty) {
+        final match = RegExp(r'https?://[^\s)]+').firstMatch(rawBanner);
+        if (match != null) {
+          bannerPhotoUrl = match.group(0);
+        } else if (rawBanner.startsWith('http')) {
+          bannerPhotoUrl = rawBanner;
+        }
+      }
+    }
+
     final rawId = (json['id'] ?? json['user_id'] ?? json['Email'] ?? json['Name'] ?? '').toString().trim();
     final idVal = rawId.isNotEmpty ? rawId : DateTime.now().microsecondsSinceEpoch.toString();
 
@@ -114,6 +130,7 @@ class Profile {
       gradYear: grad,
       city: cityVal,
       avatarUrl: photoUrl,
+      bannerUrl: bannerPhotoUrl,
       house: json['house']?.toString() ?? json['House']?.toString(),
       industry: json['industry']?.toString() ?? json['Industry']?.toString(),
       company: json['company']?.toString() ?? json['Company / Organisation']?.toString(),
@@ -138,9 +155,13 @@ class Profile {
       'grad_year': gradYear,
       'city': city,
       'avatar_url': avatarUrl,
-      if (house != null) 'House': house,
-      if (industry != null) 'Industry': industry,
-      if (company != null) 'Company / Organisation': company,
+      if (bannerUrl != null) 'banner_url': bannerUrl,
+      if (bio != null) 'bio': bio,
+      if (house != null) ...{'house': house, 'House': house},
+      if (industry != null) ...{'industry': industry, 'Industry': industry},
+      if (company != null) ...{'company': company, 'Company / Organisation': company},
+      if (openToHelping != null) ...{'open_to_helping': openToHelping, 'Open to helping': openToHelping},
+      if (lookingFor != null) ...{'looking_for': lookingFor, 'Looking for': lookingFor},
       if (email != null) 'Email': email,
       if (phone != null) 'Phone': phone,
     };
@@ -155,6 +176,7 @@ class Profile {
     int? gradYear,
     String? city,
     String? avatarUrl,
+    String? bannerUrl,
     String? house,
     String? industry,
     String? company,
@@ -174,6 +196,7 @@ class Profile {
       gradYear: gradYear ?? this.gradYear,
       city: city ?? this.city,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
       house: house ?? this.house,
       industry: industry ?? this.industry,
       company: company ?? this.company,

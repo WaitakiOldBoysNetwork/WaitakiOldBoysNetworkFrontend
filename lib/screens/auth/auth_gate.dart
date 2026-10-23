@@ -3,8 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/supabase_config.dart';
 import '../../services/auth_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../home_navigation_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../setup/setup_screen.dart';
 import 'auth_screen.dart';
 
@@ -17,6 +19,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _isConfigured = SupabaseConfig.isConfigured;
+  final _profileService = ProfileService();
 
   void _onConfigured() {
     setState(() {
@@ -76,7 +79,35 @@ class _AuthGateState extends State<AuthGate> {
         if (session != null) {
           // Fire-and-forget: ensure profile row has name data
           _backfillProfileIfNeeded();
-          return const HomeNavigationScreen();
+
+          // Check whether onboarding should be shown for this user
+          return FutureBuilder<bool>(
+            future: _profileService.shouldShowOnboarding(),
+            builder: (context, onboardingSnapshot) {
+              if (onboardingSnapshot.connectionState ==
+                  ConnectionState.waiting) {
+                return const Scaffold(
+                  backgroundColor: AppColors.background,
+                  body: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.navyPrimary,
+                    ),
+                  ),
+                );
+              }
+
+              final needsOnboarding = onboardingSnapshot.data ?? false;
+              if (needsOnboarding) {
+                return OnboardingScreen(
+                  onCompleted: () {
+                    setState(() {});
+                  },
+                );
+              }
+
+              return const HomeNavigationScreen();
+            },
+          );
         } else {
           return const AuthScreen();
         }
@@ -84,4 +115,3 @@ class _AuthGateState extends State<AuthGate> {
     );
   }
 }
-
