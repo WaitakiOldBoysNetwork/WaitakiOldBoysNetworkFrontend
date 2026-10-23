@@ -7,6 +7,48 @@ import '../../services/auth_service.dart';
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
+  static Future<void> showEmailConfirmationDialog(
+    BuildContext context,
+    String email, {
+    VoidCallback? onDismiss,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: EmailConfirmationDialog(
+          email: email,
+          onDismiss: () {
+            Navigator.of(dialogContext).pop();
+            onDismiss?.call();
+          },
+        ),
+      ),
+    );
+  }
+
+  static Future<void> showMagicLinkConfirmationDialog(
+    BuildContext context,
+    String email, {
+    VoidCallback? onDismiss,
+  }) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: MagicLinkConfirmationDialog(
+          email: email,
+          onDismiss: () {
+            Navigator.of(dialogContext).pop();
+            onDismiss?.call();
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -54,9 +96,17 @@ class _AuthScreenState extends State<AuthScreen> {
           gradYear: gradYear,
         );
         if (mounted) {
-          SnackbarHelper.showSuccess(
+          await AuthScreen.showEmailConfirmationDialog(
             context,
-            'Account created! If email confirmation is enabled, check your inbox.',
+            email,
+            onDismiss: () {
+              if (mounted) {
+                setState(() {
+                  _isSignUp = false;
+                  _passwordController.clear();
+                });
+              }
+            },
           );
         }
       } else {
@@ -85,10 +135,7 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await _authService.sendMagicLink(email: email);
       if (mounted) {
-        SnackbarHelper.showSuccess(
-          context,
-          'Magic link sent to $email! Check your email to sign in.',
-        );
+        await AuthScreen.showMagicLinkConfirmationDialog(context, email);
       }
     } catch (e) {
       if (mounted) {
@@ -412,6 +459,366 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Large, un-dismissible popup modal dialog alerting new users to check their email
+/// for account verification before signing in.
+class EmailConfirmationDialog extends StatelessWidget {
+  final String email;
+  final VoidCallback? onDismiss;
+
+  const EmailConfirmationDialog({
+    super.key,
+    required this.email,
+    this.onDismiss,
+  });
+
+  Widget _buildStepRow({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.navyPrimary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      elevation: 16,
+      backgroundColor: AppColors.surface,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon badge with WBHS Navy & Gold styling
+              Container(
+                width: 78,
+                height: 78,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                        colors: [AppColors.navyPrimary, AppColors.navyDark],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.navyPrimary.withValues(alpha: 0.28),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.mark_email_read_rounded,
+                    size: 40,
+                    color: AppColors.goldAccent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                'Check Your Inbox',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.navyDark,
+                  letterSpacing: -0.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+
+              // Subtitle
+              const Text(
+                'A verification email has been dispatched to activate your Waitaki Old Boys Network account.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  color: AppColors.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Recipient email pill card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.navyPrimary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.navyPrimary.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.mail_rounded,
+                      size: 18,
+                      color: AppColors.navyPrimary,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navyPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Steps checklist card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    _buildStepRow(
+                      icon: Icons.filter_1_rounded,
+                      text: 'Open the confirmation email in your inbox.',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStepRow(
+                      icon: Icons.filter_2_rounded,
+                      text: 'Click the verification link to activate your account.',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStepRow(
+                      icon: Icons.filter_3_rounded,
+                      text: 'Return to this app and sign in with your password.',
+                    ),
+                    const Divider(height: 18, color: AppColors.border),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: AppColors.goldDark,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Don’t see it? Please check your Spam or Junk folder.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary.withValues(alpha: 0.9),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Dismiss button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: onDismiss ?? () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navyPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Got It, I’ll Check My Email',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Modal dialog alerting user that a password-free magic link has been sent.
+class MagicLinkConfirmationDialog extends StatelessWidget {
+  final String email;
+  final VoidCallback? onDismiss;
+
+  const MagicLinkConfirmationDialog({
+    super.key,
+    required this.email,
+    this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      elevation: 16,
+      backgroundColor: AppColors.surface,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 78,
+                height: 78,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.navyPrimary, AppColors.navyDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.navyPrimary.withValues(alpha: 0.28),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.send_rounded,
+                    size: 38,
+                    color: AppColors.goldAccent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Magic Link Sent',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.navyDark,
+                  letterSpacing: -0.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'We emailed you a password-free sign-in link. Click it in your email to immediately access your account.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  color: AppColors.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.navyPrimary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.navyPrimary.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.mail_rounded,
+                      size: 18,
+                      color: AppColors.navyPrimary,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navyPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: onDismiss ?? () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navyPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Got It, I’ll Check My Email',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
