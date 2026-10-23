@@ -183,6 +183,7 @@ class ProfileService {
     String? industry,
     String? company,
     String? bio,
+    String? avatarUrl,
     String? bannerUrl,
     String? openToHelping,
     String? lookingFor,
@@ -214,6 +215,8 @@ class ProfileService {
       'bio': bio?.trim(),
       'Short Bio': bio?.trim(),
       'Full Bio': bio?.trim(),
+      if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+        'avatar_url': avatarUrl.trim(),
       if (openToHelping != null) ...{
         'open_to_helping': openToHelping.trim(),
         'Open to helping': openToHelping.trim(),
@@ -299,6 +302,14 @@ class ProfileService {
       }
 
       // Otherwise insert a new profile row strictly keyed to this authenticated user
+      if (!data.containsKey('avatar_url') ||
+          data['avatar_url'] == null ||
+          data['avatar_url'].toString().trim().isEmpty) {
+        data['avatar_url'] = Profile.generatePlaceholderAvatar(
+          firstName: cleanFirst,
+          lastName: cleanLast,
+        );
+      }
       await _client.from('profiles').insert({
         'id': userId,
         'user_id': userId,
@@ -338,6 +349,7 @@ class ProfileService {
     required String industry,
     String? company,
     String? bio,
+    String? avatarUrl,
     bool openToHelping = true,
   }) async {
     final userId = SupabaseService.currentUserId;
@@ -367,9 +379,19 @@ class ProfileService {
         ? metaLast
         : (isOwnProfile ? (currentProfile.lastName ?? '').trim() : '');
 
+    final avatarToSave = (avatarUrl != null && avatarUrl.isNotEmpty)
+        ? avatarUrl
+        : (currentProfile?.avatarUrl != null && currentProfile!.avatarUrl!.isNotEmpty)
+            ? currentProfile.avatarUrl
+            : Profile.generatePlaceholderAvatar(
+                firstName: firstName,
+                lastName: lastName,
+              );
+
     await updateProfile(
       firstName: firstName.isNotEmpty ? firstName : 'Old',
       lastName: lastName.isNotEmpty ? lastName : 'Boy',
+      avatarUrl: avatarToSave,
       house: house,
       gradYear: gradYear,
       city: city,

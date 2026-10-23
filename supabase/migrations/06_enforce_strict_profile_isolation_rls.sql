@@ -78,6 +78,8 @@ DECLARE
   v_headline text;
   v_industry text;
   v_company text;
+  v_initials text;
+  v_placeholder_avatar text;
 BEGIN
   v_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', '');
   v_last_name  := COALESCE(NEW.raw_user_meta_data->>'last_name', '');
@@ -87,6 +89,15 @@ BEGIN
   v_headline   := NEW.raw_user_meta_data->>'headline';
   v_industry   := NEW.raw_user_meta_data->>'industry';
   v_company    := NEW.raw_user_meta_data->>'company';
+
+  v_initials := UPPER(TRIM(
+    COALESCE(SUBSTRING(NULLIF(TRIM(v_first_name), '') FROM 1 FOR 1), '') ||
+    COALESCE(SUBSTRING(NULLIF(TRIM(v_last_name), '') FROM 1 FOR 1), '')
+  ));
+  IF v_initials IS NULL OR v_initials = '' THEN
+    v_initials := 'OB';
+  END IF;
+  v_placeholder_avatar := 'https://ui-avatars.com/api/?name=' || v_initials || '&background=0F2547&color=D4AF37&bold=true&size=256';
 
   -- 1. Try to link an existing pre-imported record matching Email that has NO user_id yet
   -- (Strictly check user_id IS NULL to prevent hijacking an already registered account)
@@ -101,6 +112,7 @@ BEGIN
       headline   = COALESCE(NULLIF(v_headline, ''), public.profiles.headline),
       industry   = COALESCE(NULLIF(v_industry, ''), public.profiles.industry),
       company    = COALESCE(NULLIF(v_company, ''), public.profiles.company),
+      avatar_url = COALESCE(NULLIF(public.profiles.avatar_url, ''), v_placeholder_avatar),
       email      = COALESCE(NEW.email, public.profiles.email),
       "Email"    = COALESCE(NEW.email, public.profiles."Email")
   WHERE (LOWER("Email") = LOWER(NEW.email) OR LOWER(email) = LOWER(NEW.email))
@@ -119,6 +131,7 @@ BEGIN
       headline,
       industry,
       company,
+      avatar_url,
       email,
       "Email",
       created_at
@@ -134,6 +147,7 @@ BEGIN
       v_headline,
       v_industry,
       v_company,
+      v_placeholder_avatar,
       NEW.email,
       NEW.email,
       NOW()
@@ -148,6 +162,7 @@ BEGIN
       headline   = COALESCE(EXCLUDED.headline, public.profiles.headline),
       industry   = COALESCE(EXCLUDED.industry, public.profiles.industry),
       company    = COALESCE(EXCLUDED.company, public.profiles.company),
+      avatar_url = COALESCE(NULLIF(public.profiles.avatar_url, ''), EXCLUDED.avatar_url),
       email      = COALESCE(EXCLUDED.email, public.profiles.email),
       "Email"    = COALESCE(EXCLUDED."Email", public.profiles."Email");
   END IF;

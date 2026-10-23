@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/constants/supabase_config.dart';
+import '../models/profile.dart';
 import 'directory_service.dart';
 import 'feed_service.dart';
 import 'profile_service.dart';
@@ -107,18 +108,25 @@ class AuthService {
         return;
       }
 
+      final placeholderAvatar = Profile.generatePlaceholderAvatar(
+        firstName: firstName,
+        lastName: lastName,
+      );
+
       // 2. Check if there's an UNCLAIMED pre-imported record with this email that lacks a user_id
       // Strictly filter for user_id IS NULL to prevent hijacking or leaking another user's profile!
       if (email != null && email.isNotEmpty) {
         final unclaimedList = await _client
             .from('profiles')
-            .select('id, user_id, Email')
+            .select('id, user_id, Email, avatar_url, "Profile Photo"')
             .filter('user_id', 'is', 'null')
             .ilike('Email', email.trim())
             .limit(1);
 
         if (unclaimedList.isNotEmpty) {
-          final recordId = unclaimedList.first['id'];
+          final record = unclaimedList.first;
+          final recordId = record['id'];
+          final existingPhoto = record['avatar_url'] ?? record['Profile Photo'];
           // Link this pre-imported record strictly by primary key and verify user_id is still null
           await _client
               .from('profiles')
@@ -130,6 +138,8 @@ class AuthService {
                 if (lastName != null && lastName.trim().isNotEmpty)
                   'last_name': lastName.trim(),
                 'grad_year': ?gradYear,
+                if (existingPhoto == null || existingPhoto.toString().trim().isEmpty)
+                  'avatar_url': placeholderAvatar,
               })
               .eq('id', recordId)
               .filter('user_id', 'is', 'null');
@@ -147,6 +157,7 @@ class AuthService {
           'last_name': lastName.trim(),
         'grad_year': ?gradYear,
         if (email != null && email.isNotEmpty) 'Email': email.trim(),
+        'avatar_url': placeholderAvatar,
       });
     } catch (_) {}
   }

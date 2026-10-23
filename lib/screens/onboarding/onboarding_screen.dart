@@ -290,6 +290,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         industry: industry.isNotEmpty ? industry : 'General',
         company: _companyController.text.trim(),
         bio: _bioController.text.trim(),
+        avatarUrl: _avatarUrl,
         openToHelping: _openToHelping,
       );
 

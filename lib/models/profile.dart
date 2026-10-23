@@ -58,6 +58,37 @@ class Profile {
     return result;
   }
 
+  /// Generates a standardized placeholder avatar image URL featuring user initials
+  /// on a WBHS Navy (#0F2547) background with Heritage Gold (#D4AF37) bold text.
+  static String generatePlaceholderAvatar({
+    String? firstName,
+    String? lastName,
+    String? initials,
+  }) {
+    String inits = (initials ?? '').trim().toUpperCase();
+    if (inits.isEmpty) {
+      final first = (firstName ?? '').trim();
+      final last = (lastName ?? '').trim();
+      if (first.isNotEmpty) inits += first[0].toUpperCase();
+      if (last.isNotEmpty) inits += last[0].toUpperCase();
+    }
+    if (inits.isEmpty) inits = 'OB';
+
+    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(inits)}&background=0F2547&color=D4AF37&bold=true&size=256';
+  }
+
+  /// Always returns a valid avatar image URL, falling back to the initials placeholder
+  String get effectiveAvatarUrl {
+    if (avatarUrl != null && avatarUrl!.trim().isNotEmpty) {
+      return avatarUrl!;
+    }
+    return generatePlaceholderAvatar(
+      firstName: firstName,
+      lastName: lastName,
+      initials: initials,
+    );
+  }
+
   factory Profile.fromJson(Map<String, dynamic> json) {
     String? fName = json['first_name']?.toString();
     String? lName = json['last_name']?.toString();
@@ -102,6 +133,14 @@ class Profile {
           photoUrl = match.group(0);
         }
       }
+    }
+
+    // Default to initials placeholder image if no custom photo uploaded
+    if (photoUrl == null || photoUrl.isEmpty) {
+      photoUrl = Profile.generatePlaceholderAvatar(
+        firstName: fName,
+        lastName: lName,
+      );
     }
 
     // Parse banner URL from banner_url or Airtable Banner Photo format

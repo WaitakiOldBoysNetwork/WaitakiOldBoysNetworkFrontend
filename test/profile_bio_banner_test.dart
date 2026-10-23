@@ -101,4 +101,40 @@ void main() {
       expect(SupabaseConfig.storageBucket, equals('media'));
     });
   });
+
+  group('Profile Model - Placeholder Avatar with Initials', () {
+    test('generatePlaceholderAvatar creates URL with initials, WBHS navy background, and gold text', () {
+      final url = Profile.generatePlaceholderAvatar(firstName: 'Philip', lastName: 'Crossan');
+      expect(url, equals('https://ui-avatars.com/api/?name=PC&background=0F2547&color=D4AF37&bold=true&size=256'));
+
+      final urlSingle = Profile.generatePlaceholderAvatar(firstName: 'Jake');
+      expect(urlSingle, equals('https://ui-avatars.com/api/?name=J&background=0F2547&color=D4AF37&bold=true&size=256'));
+
+      final urlEmpty = Profile.generatePlaceholderAvatar();
+      expect(urlEmpty, equals('https://ui-avatars.com/api/?name=OB&background=0F2547&color=D4AF37&bold=true&size=256'));
+    });
+
+    test('Profile.fromJson automatically generates placeholder avatar if avatar_url is missing', () {
+      final json = {
+        'id': 'user-no-photo',
+        'first_name': 'Frank',
+        'last_name': 'Milner',
+      };
+      final profile = Profile.fromJson(json);
+      expect(profile.avatarUrl, equals('https://ui-avatars.com/api/?name=FM&background=0F2547&color=D4AF37&bold=true&size=256'));
+      expect(profile.effectiveAvatarUrl, equals('https://ui-avatars.com/api/?name=FM&background=0F2547&color=D4AF37&bold=true&size=256'));
+    });
+
+    test('Profile.fromJson preserves custom uploaded avatar_url if present', () {
+      final json = {
+        'id': 'user-custom-photo',
+        'first_name': 'Frank',
+        'last_name': 'Milner',
+        'avatar_url': 'https://storage.supabase.co/media/avatars/custom.jpg',
+      };
+      final profile = Profile.fromJson(json);
+      expect(profile.avatarUrl, equals('https://storage.supabase.co/media/avatars/custom.jpg'));
+      expect(profile.effectiveAvatarUrl, equals('https://storage.supabase.co/media/avatars/custom.jpg'));
+    });
+  });
 }
