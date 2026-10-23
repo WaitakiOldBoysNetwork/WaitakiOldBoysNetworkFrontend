@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/connection.dart';
 import '../../models/post.dart';
 import '../../models/profile.dart';
+import '../../models/school_notice.dart';
 import '../../services/directory_service.dart';
 import '../../services/feed_service.dart';
 import '../../services/profile_service.dart';
@@ -40,6 +42,7 @@ class _FeedScreenState extends State<FeedScreen> {
   List<Profile> _suggestedOldBoys = [];
   Map<String, Connection> _myConnections = {};
   final Set<String> _connectingIds = {};
+  List<SchoolNotice> _notices = SchoolNotice.defaultNotices;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -55,6 +58,8 @@ class _FeedScreenState extends State<FeedScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    _loadSchoolNotices();
 
     try {
       final results = await Future.wait([
@@ -128,6 +133,42 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  Future<void> _loadSchoolNotices() async {
+    if (!SupabaseService.isInitialized) return;
+    try {
+      final response = await SupabaseService.client
+          .from('school_notices')
+          .select('id, title, snippet, badge, url, image_url, published_at')
+          .order('published_at', ascending: false)
+          .limit(5);
+
+      if (mounted && response.isNotEmpty) {
+        setState(() {
+          _notices = response
+              .map<SchoolNotice>((item) => SchoolNotice.fromJson(item))
+              .toList();
+        });
+      }
+    } catch (_) {
+      // Gracefully retains SchoolNotice.defaultNotices
+    }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else if (mounted) {
+        SnackbarHelper.showError(context, 'Could not open link: $url');
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Could not open link: $url');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,6 +223,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                     children: [
                                       _buildDesktopComposerCard(),
                                       const SizedBox(height: 16),
+                                      if (!showRight) ...[
+                                        _buildNoticeboardCard(),
+                                        const SizedBox(height: 16),
+                                      ],
                                       if (_posts.isEmpty)
                                         _buildEmptyFeedCard()
                                       else
@@ -412,7 +457,7 @@ class _FeedScreenState extends State<FeedScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            Text(
+            const Text(
               'Cultores Mentium • Est. 1883\nOamaru, North Otago',
               style: TextStyle(
                 fontSize: 11.5,
@@ -429,24 +474,10 @@ class _FeedScreenState extends State<FeedScreen> {
               onTap: widget.onNavigateToDirectory,
             ),
             _buildQuickLink(
-              icon: Icons.history_edu,
-              label: 'School Archives & Museum',
-              onTap: () {
-                SnackbarHelper.showSuccess(
-                  context,
-                  'Waitaki Archives portal coming soon!',
-                );
-              },
-            ),
-            _buildQuickLink(
-              icon: Icons.event_available,
-              label: 'Upcoming WBHS Reunions',
-              onTap: () {
-                SnackbarHelper.showSuccess(
-                  context,
-                  'Annual Old Boys Reunion: October 2026',
-                );
-              },
+              icon: Icons.public,
+              label: 'Official WBHS Website',
+              onTap: () => _openUrl('https://www.waitakibhs.school.nz'),
+              isExternal: true,
             ),
           ],
         ),
@@ -458,6 +489,7 @@ class _FeedScreenState extends State<FeedScreen> {
     required IconData icon,
     required String label,
     required VoidCallback? onTap,
+    bool isExternal = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -478,9 +510,9 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 16,
+            Icon(
+              isExternal ? Icons.open_in_new : Icons.chevron_right,
+              size: isExternal ? 13 : 16,
               color: AppColors.textMuted,
             ),
           ],
@@ -780,14 +812,14 @@ class _FeedScreenState extends State<FeedScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: const [
-                Icon(
+              children: [
+                const Icon(
                   Icons.campaign_rounded,
                   color: AppColors.crimson,
                   size: 20,
                 ),
-                SizedBox(width: 8),
-                Expanded(
+                const SizedBox(width: 8),
+                const Expanded(
                   child: Text(
                     'WBHS Noticeboard',
                     style: TextStyle(
@@ -799,21 +831,90 @@ class _FeedScreenState extends State<FeedScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                InkWell(
+                  onTap: () => _openUrl('https://hail.to/waitaki-boys-high-school'),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Tooltip(
+                    message: 'Open WBHS on Hail.to',
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Text(
+                            'hail.to',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.navyPrimary,
+                            ),
+                          ),
+                          SizedBox(width: 3),
+                          Icon(
+                            Icons.open_in_new,
+                            size: 11,
+                            color: AppColors.navyPrimary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            _buildNoticeItem(
-              title: '2026 Annual Oamaru Reunion',
-              snippet:
-                  'Join Old Boys at the Hall of Memories on 24-26 October. Registration opens next month.',
-              badge: 'Featured',
-            ),
-            const Divider(height: 16),
-            _buildNoticeItem(
-              title: 'WBHS Rector\'s Term Update',
-              snippet:
-                  'Academic excellence, 1st XV rugby results, and heritage campus upgrades.',
-              badge: 'School News',
+            for (int i = 0; i < _notices.length; i++) ...[
+              if (i > 0) const Divider(height: 16),
+              _buildNoticeItem(
+                title: _notices[i].title,
+                snippet: _notices[i].snippet,
+                badge: _notices[i].badge,
+                url: _notices[i].url,
+              ),
+            ],
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => _openUrl('https://hail.to/waitaki-boys-high-school'),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.navyPrimary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: AppColors.navyPrimary.withValues(alpha: 0.12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.newspaper_rounded,
+                      size: 14,
+                      color: AppColors.navyPrimary,
+                    ),
+                    SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Browse all articles on Hail.to',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.navyPrimary,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.open_in_new,
+                      size: 11,
+                      color: AppColors.navyPrimary,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -825,44 +926,64 @@ class _FeedScreenState extends State<FeedScreen> {
     required String title,
     required String snippet,
     required String badge,
+    String? url,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: AppColors.navyPrimary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            badge,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: AppColors.navyPrimary,
+    return InkWell(
+      onTap: url != null ? () => _openUrl(url) : null,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.navyPrimary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navyPrimary,
+                    ),
+                  ),
+                ),
+                if (url != null) ...[
+                  const Spacer(),
+                  const Icon(
+                    Icons.open_in_new,
+                    size: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ],
             ),
-          ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.navyDark,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              snippet,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textSecondary,
+                height: 1.35,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: AppColors.navyDark,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          snippet,
-          style: const TextStyle(
-            fontSize: 11.5,
-            color: AppColors.textSecondary,
-            height: 1.35,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
