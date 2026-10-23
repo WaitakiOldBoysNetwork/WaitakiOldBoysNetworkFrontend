@@ -60,19 +60,37 @@ class SupabaseConfig {
         defaultTargetPlatform == TargetPlatform.linux;
   }
 
-  /// Platform-aware authentication callback / redirect URL for OAuth and Magic Links
+  /// Production web hosting URL on GitHub Pages
+  static const String productionWebUrl = String.fromEnvironment(
+    'APP_WEB_URL',
+    defaultValue:
+        'https://waitakioldboysnetwork.github.io/WaitakiOldBoysNetworkFrontend/',
+  );
+
+  /// Platform-aware authentication callback / redirect URL for OAuth, Email Confirmation, and Magic Links
   static String get authCallbackUrl {
     if (kIsWeb) {
       try {
-        final origin = Uri.base.origin;
+        final base = Uri.base;
+        final host = base.host.toLowerCase();
+        // If explicitly running in local dev browser (localhost / 127.0.0.1)
+        if (host == 'localhost' || host == '127.0.0.1') {
+          return base.origin;
+        }
+        // If running on hosted web (e.g. GitHub Pages or custom domain)
+        final origin = base.origin;
+        final path = base.path;
         if (origin.isNotEmpty && !origin.startsWith('null')) {
-          return origin;
+          final cleanPath = path.isEmpty || path == '/'
+              ? ''
+              : (path.endsWith('/') ? path : '$path/');
+          return '$origin$cleanPath';
         }
       } catch (_) {}
-      return 'http://localhost:3000';
+      return productionWebUrl;
     }
-    // Deep-link / custom scheme for desktop and native platforms
-    return 'io.supabase.waitakinetwork://login-callback';
+    // For Desktop / Mobile, redirect email links to the live production web page
+    return productionWebUrl;
   }
 
   /// Load persisted credentials from SharedPreferences, with support for Web URL query parameter overrides
