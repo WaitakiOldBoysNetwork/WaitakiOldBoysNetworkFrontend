@@ -9,7 +9,7 @@ import '../../services/feed_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../home_navigation_screen.dart';
-import '../onboarding/onboarding_screen.dart';
+import '../onboarding/onboarding_wizard_screen.dart';
 import '../setup/setup_screen.dart';
 import 'auth_screen.dart';
 
@@ -187,11 +187,11 @@ class _AuthGateState extends State<AuthGate> {
 
     if (_session != null) {
       if (_needsOnboarding) {
-        return OnboardingScreen(
+        return OnboardingWizardScreen(
           onCompleted: _onOnboardingCompleted,
         );
       }
-      return const HomeNavigationScreen();
+      return const HomeNavigationScreen(initialIndex: 1);
     }
 
     return const AuthScreen();

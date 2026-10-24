@@ -36,8 +36,10 @@ class DirectoryService {
   Future<List<Profile>> searchOldBoys({
     String? query,
     int? gradYear,
+    String? house,
+    int? age,
     String? city,
-    int limit = 40,
+    int limit = 60,
   }) async {
     if (!SupabaseService.isInitialized) return [];
     var req = _client.from('profiles').select(
@@ -53,6 +55,11 @@ class DirectoryService {
       req = req.or('city.ilike.%$c%,Region.ilike.%$c%');
     }
 
+    if (house != null && house.trim().isNotEmpty && house != 'All Houses') {
+      final h = house.trim();
+      req = req.or('house.ilike.%$h%,House.ilike.%$h%');
+    }
+
     if (query != null && query.trim().isNotEmpty) {
       final q = query.trim();
       req = req.or(
@@ -61,10 +68,32 @@ class DirectoryService {
     }
 
     final raw = await req.limit(limit);
-    final profiles = raw
+    var profiles = raw
         .map<Profile>((j) => Profile.fromJson(j))
         .where((p) => p.fullName.trim().isNotEmpty)
         .toList();
+
+    // Client-side exact filtering for age, house, and query
+    if (age != null) {
+      profiles = profiles.where((p) => p.age == age).toList();
+    }
+    if (house != null && house.trim().isNotEmpty && house != 'All Houses') {
+      final targetHouse = house.trim().toLowerCase();
+      profiles = profiles.where((p) {
+        final pHouse = (p.house ?? '').toLowerCase();
+        return pHouse.contains(targetHouse);
+      }).toList();
+    }
+    if (query != null && query.trim().isNotEmpty) {
+      final q = query.trim().toLowerCase();
+      profiles = profiles.where((p) {
+        return p.fullName.toLowerCase().contains(q) ||
+            (p.firstName != null && p.firstName!.toLowerCase().contains(q)) ||
+            (p.lastName != null && p.lastName!.toLowerCase().contains(q)) ||
+            (p.headline != null && p.headline!.toLowerCase().contains(q)) ||
+            (p.company != null && p.company!.toLowerCase().contains(q));
+      }).toList();
+    }
 
     // Sort: profiles with registered accounts first, then alphabetically
     profiles.sort((a, b) {
@@ -82,12 +111,16 @@ class DirectoryService {
   Future<List<Profile>> searchAlumni({
     String? query,
     int? gradYear,
+    String? house,
+    int? age,
     String? city,
-    int limit = 40,
+    int limit = 60,
   }) =>
       searchOldBoys(
         query: query,
         gradYear: gradYear,
+        house: house,
+        age: age,
         city: city,
         limit: limit,
       );

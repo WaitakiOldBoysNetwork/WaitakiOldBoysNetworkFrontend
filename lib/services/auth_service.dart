@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/constants/supabase_config.dart';
@@ -17,6 +18,91 @@ class AuthService {
 
   User? get currentUser =>
       SupabaseService.isInitialized ? _client.auth.currentUser : null;
+
+  /// Checks whether an email address exists in the database.
+  Future<bool> checkEmailExists(String email) async {
+    final cleanEmail = email.trim();
+    if (cleanEmail.isEmpty || !SupabaseService.isInitialized) return false;
+    try {
+      final res = await _client
+          .from('profiles')
+          .select('id, user_id, email, Email')
+          .or('email.ilike.$cleanEmail,Email.ilike.$cleanEmail')
+          .limit(1);
+      return res.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Checks if a user has completed onboarding
+  Future<bool> checkOnboardingCompleted(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('sp_onboarding_completed_$userId') == true) {
+        return true;
+      }
+
+      if (!SupabaseService.isInitialized) return false;
+      final res = await _client
+          .from('profiles')
+          .select('id, user_id, is_onboarded, onboarding_step, house, grad_year')
+          .or('id.eq.$userId,user_id.eq.$userId')
+          .maybeSingle();
+
+      if (res != null) {
+        if (res['is_onboarded'] == true ||
+            res['onboarding_completed'] == true ||
+            res['is_onboarded'] == 'true' ||
+            res['onboarding_completed'] == 'true') {
+          await prefs.setBool('sp_onboarding_completed_$userId', true);
+          return true;
+        }
+        final house = res['house']?.toString();
+        final gradYear = res['grad_year'];
+        if (house != null && house.trim().isNotEmpty && gradYear != null) {
+          await prefs.setBool('sp_onboarding_completed_$userId', true);
+          return true;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Retrieves user's last saved onboarding step (defaults to Step 2 if account was created)
+  Future<int> getUserOnboardingStep(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localStep = prefs.getInt('sp_onboarding_step_$userId');
+      if (localStep != null && localStep >= 2 && localStep <= 3) {
+        return localStep;
+      }
+
+      if (!SupabaseService.isInitialized) return 2;
+      final res = await _client
+          .from('profiles')
+          .select('id, user_id, onboarding_step, first_name, last_name, house')
+          .or('id.eq.$userId,user_id.eq.$userId')
+          .maybeSingle();
+
+      if (res != null) {
+        final step = int.tryParse(res['onboarding_step']?.toString() ?? '');
+        if (step != null && step >= 2 && step <= 3) {
+          return step;
+        }
+        final hasName = res['first_name'] != null &&
+            res['first_name'].toString().trim().isNotEmpty;
+        final hasHouse = res['house'] != null &&
+            res['house'].toString().trim().isNotEmpty;
+        if (hasName && !hasHouse) return 3;
+      }
+      return 2;
+    } catch (_) {
+      return 2;
+    }
+  }
 
   Future<AuthResponse> signInWithPassword({
     required String email,

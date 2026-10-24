@@ -14,6 +14,9 @@ class Profile {
   final String? bio;
   final String? email;
   final String? phone;
+  final int? age;
+  final bool? isOnboarded;
+  final int? onboardingStep;
   final String? openToHelping;
   final String? lookingFor;
   final DateTime? createdAt;
@@ -34,6 +37,9 @@ class Profile {
     this.bio,
     this.email,
     this.phone,
+    this.age,
+    this.isOnboarded,
+    this.onboardingStep,
     this.openToHelping,
     this.lookingFor,
     this.createdAt,
@@ -176,6 +182,16 @@ class Profile {
       bio: json['bio']?.toString() ?? json['Short Bio']?.toString() ?? json['Full Bio']?.toString(),
       email: json['email']?.toString() ?? json['Email']?.toString().trim(),
       phone: json['phone']?.toString() ?? json['Phone']?.toString(),
+      age: json['age'] != null
+          ? int.tryParse(json['age'].toString())
+          : (json['Age'] != null ? int.tryParse(json['Age'].toString()) : null),
+      isOnboarded: json['is_onboarded'] == true ||
+          json['onboarding_completed'] == true ||
+          json['is_onboarded'] == 'true' ||
+          json['onboarding_completed'] == 'true',
+      onboardingStep: json['onboarding_step'] != null
+          ? int.tryParse(json['onboarding_step'].toString())
+          : null,
       openToHelping: json['open_to_helping']?.toString() ?? json['Open to helping']?.toString(),
       lookingFor: json['looking_for']?.toString() ?? json['Looking for']?.toString(),
       createdAt: json['created_at'] != null
@@ -203,6 +219,12 @@ class Profile {
       if (lookingFor != null) ...{'looking_for': lookingFor, 'Looking for': lookingFor},
       if (email != null) 'Email': email,
       if (phone != null) 'Phone': phone,
+      if (age != null) 'age': age,
+      if (isOnboarded != null) ...{
+        'is_onboarded': isOnboarded,
+        'onboarding_completed': isOnboarded,
+      },
+      if (onboardingStep != null) 'onboarding_step': onboardingStep,
     };
   }
 
@@ -222,6 +244,9 @@ class Profile {
     String? bio,
     String? email,
     String? phone,
+    int? age,
+    bool? isOnboarded,
+    int? onboardingStep,
     String? openToHelping,
     String? lookingFor,
     DateTime? createdAt,
@@ -242,6 +267,9 @@ class Profile {
       bio: bio ?? this.bio,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      age: age ?? this.age,
+      isOnboarded: isOnboarded ?? this.isOnboarded,
+      onboardingStep: onboardingStep ?? this.onboardingStep,
       openToHelping: openToHelping ?? this.openToHelping,
       lookingFor: lookingFor ?? this.lookingFor,
       createdAt: createdAt ?? this.createdAt,

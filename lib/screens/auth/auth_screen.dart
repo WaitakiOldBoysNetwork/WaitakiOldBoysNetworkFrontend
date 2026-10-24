@@ -4,6 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
+import '../../services/supabase_service.dart';
+import '../home_navigation_screen.dart';
+import '../onboarding/onboarding_wizard_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -60,6 +63,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // Smart Auth Entry Gate State
+  bool _isEmailChecked = false;
+  bool _showIncompleteBanner = false;
+  int _incompleteStep = 2;
+
   // Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -82,6 +90,103 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    if (_isSignUp) {
+      await _handleRegisterSubmit();
+    } else if (!_isEmailChecked) {
+      await _handleEmailContinue();
+    } else {
+      await _handlePasswordLogin();
+    }
+  }
+
+  /// Step 1 of Smart Auth Entry Gate: Email First
+  Future<void> _handleEmailContinue() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+      SnackbarHelper.showError(context, 'Please enter a valid email address');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final exists = await _authService.checkEmailExists(email);
+      if (mounted) {
+        if (!exists) {
+          // New User: Automatically route them into Step 1 of the Onboarding Wizard
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => OnboardingWizardScreen(
+                initialEmail: email,
+                initialStep: 1,
+                onCompleted: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => const HomeNavigationScreen(initialIndex: 1),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          // Existing User: Reveal the Password input field with a "Log In" button
+          setState(() {
+            _isEmailChecked = true;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, 'Error checking email: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Step 2 of Smart Auth Entry Gate: Password Authentication
+  Future<void> _handlePasswordLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    if (password.isEmpty) {
+      SnackbarHelper.showError(context, 'Please enter your password');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final res = await _authService.signInWithPassword(email: email, password: password);
+      final userId = res.user?.id ?? SupabaseService.currentUserId;
+
+      if (userId != null && mounted) {
+        final isCompleted = await _authService.checkOnboardingCompleted(userId);
+        if (!mounted) return;
+        if (isCompleted) {
+          // Redirect directly to /directory
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const HomeNavigationScreen(initialIndex: 1),
+            ),
+          );
+        } else {
+          final step = await _authService.getUserOnboardingStep(userId);
+          if (!mounted) return;
+          setState(() {
+            _showIncompleteBanner = true;
+            _incompleteStep = step;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, _parseAuthError(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleRegisterSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -89,34 +194,31 @@ class _AuthScreenState extends State<AuthScreen> {
     final password = _passwordController.text.trim();
 
     try {
-      if (_isSignUp) {
-        final gradYear = int.tryParse(_gradYearController.text.trim());
-        final phone = _phoneController.text.trim();
-        await _authService.signUpWithPassword(
-          email: email,
-          password: password,
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          gradYear: gradYear,
-          phone: phone.isNotEmpty ? phone : null,
+      final gradYear = int.tryParse(_gradYearController.text.trim());
+      final phone = _phoneController.text.trim();
+      await _authService.signUpWithPassword(
+        email: email,
+        password: password,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        gradYear: gradYear,
+        phone: phone.isNotEmpty ? phone : null,
+      );
+      if (mounted) {
+        await AuthScreen.showEmailConfirmationDialog(
+          context,
+          email,
+          onDismiss: () {
+            if (mounted) {
+              setState(() {
+                _isSignUp = false;
+                _isEmailChecked = false;
+                _passwordController.clear();
+                _phoneController.clear();
+              });
+            }
+          },
         );
-        if (mounted) {
-          await AuthScreen.showEmailConfirmationDialog(
-            context,
-            email,
-            onDismiss: () {
-              if (mounted) {
-                setState(() {
-                  _isSignUp = false;
-                  _passwordController.clear();
-                  _phoneController.clear();
-                });
-              }
-            },
-          );
-        }
-      } else {
-        await _authService.signInWithPassword(email: email, password: password);
       }
     } catch (e) {
       if (mounted) {
@@ -400,57 +502,188 @@ class _AuthScreenState extends State<AuthScreen> {
                         const SizedBox(height: 14),
                       ],
 
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email Address',
-                          prefixIcon: Icon(Icons.mail_outline, size: 20),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          if (!v.contains('@') || !v.contains('.')) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              size: 20,
-                              color: AppColors.textMuted,
-                            ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
+                      // Incomplete Onboarding Prompt Banner
+                      if (_showIncompleteBanner) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: AppColors.crimson.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.crimson.withValues(alpha: 0.3),
                             ),
                           ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline_rounded,
+                                    color: AppColors.crimson,
+                                    size: 22,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Finish setting up your profile to access the directory',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppColors.navyDark,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => OnboardingWizardScreen(
+                                        initialStep: _incompleteStep,
+                                        onCompleted: () {
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const HomeNavigationScreen(
+                                                initialIndex: 1,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.crimson,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Complete Setup',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return 'Password is required';
-                          }
-                          if (_isSignUp && v.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
+                      ],
+
+                      // Email Field (Visible in Sign Up or when entering email in Sign In)
+                      if (_isSignUp || !_isEmailChecked) ...[
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email Address',
+                            prefixIcon: Icon(Icons.mail_outline, size: 20),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Email is required';
+                            }
+                            if (!v.contains('@') || !v.contains('.')) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // If Existing User on Sign In tab: Display confirmed email + Change link
+                      if (!_isSignUp && _isEmailChecked) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceMuted,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF16A34A),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _emailController.text,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: AppColors.navyDark,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isEmailChecked = false;
+                                    _passwordController.clear();
+                                  });
+                                },
+                                child: const Text(
+                                  'Change',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // Password Field (Visible in Sign Up or after email is checked in Sign In)
+                      if (_isSignUp || _isEmailChecked) ...[
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                size: 20,
+                                color: AppColors.textMuted,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Password is required';
+                            }
+                            if (_isSignUp && v.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                      ],
 
                       // Submit Button
                       ElevatedButton(
@@ -468,7 +701,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                               )
                             : Text(
-                                _isSignUp ? 'Join Old Boys Network' : 'Sign In',
+                                _isSignUp
+                                    ? 'Join Old Boys Network'
+                                    : (!_isEmailChecked ? 'Continue' : 'Log In'),
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,

@@ -10,20 +10,25 @@ import 'directory/directory_screen.dart';
 import 'feed/feed_screen.dart';
 import 'feed/widgets/create_post_dialog.dart';
 import 'network/connections_screen.dart';
+import 'onboarding/onboarding_wizard_screen.dart';
 import 'profile/profile_screen.dart';
 
 class HomeNavigationScreen extends StatefulWidget {
-  const HomeNavigationScreen({super.key});
+  final int initialIndex;
+
+  const HomeNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeNavigationScreen> createState() => _HomeNavigationScreenState();
 }
 
 class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
   int _pendingCount = 0;
   bool _isCollapsed = false;
   Profile? _currentProfile;
+  bool _hasIncompleteOnboarding = false;
+  int _incompleteStep = 2;
 
   final _directoryService = DirectoryService();
   final _profileService = ProfileService();
@@ -32,6 +37,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     _checkPendingRequests();
     _loadProfile();
   }
@@ -51,12 +57,55 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     try {
       final profile = await _profileService.getCurrentProfile();
       if (mounted && profile != null) {
-        setState(() => _currentProfile = profile);
+        final isCompleted = profile.isOnboarded == true ||
+            (profile.house != null &&
+                profile.house!.trim().isNotEmpty &&
+                profile.gradYear != null);
+
+        final step = profile.onboardingStep ??
+            (profile.house == null || profile.house!.isEmpty ? 3 : 2);
+
+        setState(() {
+          _currentProfile = profile;
+          _hasIncompleteOnboarding = !isCompleted;
+          _incompleteStep = step.clamp(2, 3);
+        });
+
+        // If user accessed /directory directly while onboarding is incomplete, redirect immediately
+        if (!isCompleted && _currentIndex == 1) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _resumeOnboarding();
+          });
+        }
       }
     } catch (_) {}
   }
 
+  void _resumeOnboarding() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OnboardingWizardScreen(
+          initialStep: _incompleteStep,
+          onCompleted: () {
+            Navigator.of(context).pop();
+            setState(() {
+              _hasIncompleteOnboarding = false;
+              _currentIndex = 1;
+            });
+            _loadProfile();
+          },
+        ),
+      ),
+    );
+  }
+
   void _navigateToIndex(int index) {
+    if (index == 1 && _hasIncompleteOnboarding) {
+      // Protect /directory route
+      _resumeOnboarding();
+      return;
+    }
+
     setState(() => _currentIndex = index);
     if (index == 2) {
       _checkPendingRequests();
@@ -254,9 +303,68 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
 
           // 2. Main View
           Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: screens,
+            child: Column(
+              children: [
+                if (_hasIncompleteOnboarding)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.crimson.withValues(alpha: 0.08),
+                      border: const Border(
+                        bottom: BorderSide(color: AppColors.crimson, width: 1.5),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.crimson,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Finish setting up your profile to access the directory',
+                            style: TextStyle(
+                              color: AppColors.navyDark,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _resumeOnboarding,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.crimson,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Complete Setup',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: screens,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

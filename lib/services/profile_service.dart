@@ -190,6 +190,9 @@ class ProfileService {
     String? openToHelping,
     String? lookingFor,
     String? phone,
+    int? age,
+    int? onboardingStep,
+    bool? isOnboarded,
   }) async {
     final userId = SupabaseService.currentUserId;
     if (userId == null) throw Exception('User not logged in');
@@ -232,11 +235,28 @@ class ProfileService {
         'looking_for': lookingFor.trim(),
         'Looking for': lookingFor.trim(),
       },
+      'age': ?age,
+      'onboarding_step': ?onboardingStep,
+      if (isOnboarded != null) ...{
+        'is_onboarded': isOnboarded,
+        'onboarding_completed': isOnboarded,
+      },
     };
 
     if (bannerUrl != null) {
       data['banner_url'] = bannerUrl.trim().isEmpty ? null : bannerUrl.trim();
     }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (onboardingStep != null) {
+        await prefs.setInt('sp_onboarding_step_$userId', onboardingStep);
+      }
+      if (isOnboarded != null) {
+        await prefs.setBool('sp_onboarding_completed_$userId', isOnboarded);
+        if (isOnboarded) markOnboardingCompleted(userId);
+      }
+    } catch (_) {}
 
     // Invalidate cached profile so subsequent immediate reads won't return stale data
     invalidateCache();
