@@ -24,6 +24,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
+  late TextEditingController _phoneController;
   late TextEditingController _headlineController;
   late TextEditingController _cityController;
   late TextEditingController _gradYearController;
@@ -70,6 +71,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         TextEditingController(text: widget.profile.firstName ?? '');
     _lastNameController =
         TextEditingController(text: widget.profile.lastName ?? '');
+    _phoneController =
+        TextEditingController(text: widget.profile.phone ?? '');
     _headlineController =
         TextEditingController(text: widget.profile.headline ?? '');
     _cityController = TextEditingController(text: widget.profile.city ?? '');
@@ -91,6 +94,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _phoneController.dispose();
     _headlineController.dispose();
     _cityController.dispose();
     _gradYearController.dispose();
@@ -187,6 +191,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await _profileService.updateProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
+        phone: _phoneController.text.trim(),
         headline: _headlineController.text.trim(),
         gradYear: gradYear,
         city: _cityController.text.trim(),
@@ -546,6 +551,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      hintText: 'e.g. 021 123 4567 or +64 21 123 4567',
+                      prefixIcon: Icon(Icons.phone_outlined, size: 20),
+                    ),
                   ),
                   const SizedBox(height: 18),
 

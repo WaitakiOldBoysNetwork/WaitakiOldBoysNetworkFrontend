@@ -38,6 +38,7 @@ class AuthService {
         gradYear: meta?['grad_year'] != null
             ? int.tryParse(meta!['grad_year'].toString())
             : null,
+        phone: meta?['phone']?.toString(),
       );
     }
 
@@ -50,7 +51,9 @@ class AuthService {
     String? firstName,
     String? lastName,
     int? gradYear,
+    String? phone,
   }) async {
+    final cleanPhone = phone?.trim();
     final response = await _client.auth.signUp(
       email: email.trim(),
       password: password,
@@ -59,6 +62,7 @@ class AuthService {
         if (firstName != null) 'first_name': firstName.trim(),
         if (lastName != null) 'last_name': lastName.trim(),
         'grad_year': ?gradYear,
+        if (cleanPhone != null && cleanPhone.isNotEmpty) 'phone': cleanPhone,
       },
     );
 
@@ -71,6 +75,7 @@ class AuthService {
         firstName: firstName,
         lastName: lastName,
         gradYear: gradYear,
+        phone: cleanPhone,
       );
     }
 
@@ -86,8 +91,10 @@ class AuthService {
     String? firstName,
     String? lastName,
     int? gradYear,
+    String? phone,
   }) async {
     try {
+      final cleanPhone = phone?.trim();
       // 1. Check if row exists for this userId
       final existingUserList = await _client
           .from('profiles')
@@ -104,6 +111,10 @@ class AuthService {
           if (lastName != null && lastName.trim().isNotEmpty)
             'last_name': lastName.trim(),
           'grad_year': ?gradYear,
+          if (cleanPhone != null && cleanPhone.isNotEmpty) ...{
+            'phone': cleanPhone,
+            'Phone': cleanPhone,
+          },
         }).or('id.eq.$userId,user_id.eq.$userId');
         return;
       }
@@ -138,6 +149,10 @@ class AuthService {
                 if (lastName != null && lastName.trim().isNotEmpty)
                   'last_name': lastName.trim(),
                 'grad_year': ?gradYear,
+                if (cleanPhone != null && cleanPhone.isNotEmpty) ...{
+                  'phone': cleanPhone,
+                  'Phone': cleanPhone,
+                },
                 if (existingPhoto == null || existingPhoto.toString().trim().isEmpty)
                   'avatar_url': placeholderAvatar,
               })
@@ -156,6 +171,10 @@ class AuthService {
         if (lastName != null && lastName.trim().isNotEmpty)
           'last_name': lastName.trim(),
         'grad_year': ?gradYear,
+        if (cleanPhone != null && cleanPhone.isNotEmpty) ...{
+          'phone': cleanPhone,
+          'Phone': cleanPhone,
+        },
         if (email != null && email.isNotEmpty) 'Email': email.trim(),
         'avatar_url': placeholderAvatar,
       });

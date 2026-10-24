@@ -66,6 +66,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _gradYearController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -76,6 +77,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _gradYearController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -89,12 +91,14 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       if (_isSignUp) {
         final gradYear = int.tryParse(_gradYearController.text.trim());
+        final phone = _phoneController.text.trim();
         await _authService.signUpWithPassword(
           email: email,
           password: password,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
           gradYear: gradYear,
+          phone: phone.isNotEmpty ? phone : null,
         );
         if (mounted) {
           await AuthScreen.showEmailConfirmationDialog(
@@ -105,6 +109,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 setState(() {
                   _isSignUp = false;
                   _passwordController.clear();
+                  _phoneController.clear();
                 });
               }
             },
@@ -363,6 +368,31 @@ class _AuthScreenState extends State<AuthScreen> {
                                 parsed < 1920 ||
                                 parsed > 2035) {
                               return 'Enter valid year';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          autofillHints: const [AutofillHints.telephoneNumber],
+                          decoration: const InputDecoration(
+                            labelText: 'Phone Number',
+                            hintText: 'e.g. 021 123 4567 or +64 21 123 4567',
+                            prefixIcon: Icon(
+                              Icons.phone_outlined,
+                              size: 20,
+                            ),
+                          ),
+                          validator: (v) {
+                            if (!_isSignUp) return null;
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Required';
+                            }
+                            final clean = v.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+                            if (clean.length < 7 || !RegExp(r'^[0-9]+$').hasMatch(clean)) {
+                              return 'Enter valid phone number';
                             }
                             return null;
                           },

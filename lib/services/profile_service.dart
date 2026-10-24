@@ -71,7 +71,7 @@ class ProfileService {
       final response = await _client
           .from('profiles')
           .select(
-            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for',
+            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for, phone, email',
           )
           .or('user_id.eq.$userId,id.eq.$userId')
           .order('updated_at', ascending: false)
@@ -108,6 +108,8 @@ class ProfileService {
         industry: meta?['industry']?.toString(),
         company: meta?['company']?.toString(),
         bio: meta?['bio']?.toString(),
+        phone: meta?['phone']?.toString(),
+        email: authUser?.email,
         bannerUrl: fallbackBanner,
         gradYear: meta?['grad_year'] != null
             ? int.tryParse(meta!['grad_year'].toString())
@@ -132,7 +134,7 @@ class ProfileService {
       final response = await _client
           .from('profiles')
           .select(
-            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for',
+            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for, phone, email',
           )
           .or('id.eq.$id,user_id.eq.$id')
           .order('updated_at', ascending: false)
@@ -187,6 +189,7 @@ class ProfileService {
     String? bannerUrl,
     String? openToHelping,
     String? lookingFor,
+    String? phone,
   }) async {
     final userId = SupabaseService.currentUserId;
     if (userId == null) throw Exception('User not logged in');
@@ -215,6 +218,10 @@ class ProfileService {
       'bio': bio?.trim(),
       'Short Bio': bio?.trim(),
       'Full Bio': bio?.trim(),
+      if (phone != null) ...{
+        'phone': phone.trim().isEmpty ? null : phone.trim(),
+        'Phone': phone.trim().isEmpty ? null : phone.trim(),
+      },
       if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
         'avatar_url': avatarUrl.trim(),
       if (openToHelping != null) ...{
@@ -247,6 +254,8 @@ class ProfileService {
           'industry': industry?.trim(),
           'company': company?.trim(),
           'bio': bio?.trim(),
+          if (phone != null)
+            'phone': phone.trim().isEmpty ? null : phone.trim(),
           if (openToHelping != null) 'open_to_helping': openToHelping.trim(),
           if (lookingFor != null) 'looking_for': lookingFor.trim(),
           if (bannerUrl != null)

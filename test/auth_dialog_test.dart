@@ -57,4 +57,55 @@ void main() {
     // Dialog is now gone
     expect(find.text('Check Your Inbox'), findsNothing);
   });
+
+  testWidgets('AuthScreen Register tab displays Phone Number field and validates input',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 1100);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AuthScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Switch to Register (Sign Up) tab
+    await tester.tap(find.text('Register'));
+    await tester.pumpAndSettle();
+
+    // Verify Phone Number field is present with phone icon
+    expect(find.text('Phone Number'), findsOneWidget);
+    expect(find.byIcon(Icons.phone_outlined), findsOneWidget);
+
+    // Scroll to submit button and tap without filling fields to trigger validation
+    final joinButton = find.text('Join Old Boys Network');
+    expect(joinButton, findsOneWidget);
+    await tester.ensureVisible(joinButton);
+    await tester.tap(joinButton);
+    await tester.pumpAndSettle();
+
+    // Required error should show
+    expect(find.text('Required'), findsWidgets);
+
+    // Enter an invalid short phone number
+    final phoneField = find.widgetWithText(TextFormField, 'Phone Number');
+    await tester.ensureVisible(phoneField);
+    await tester.enterText(phoneField, '123');
+    await tester.ensureVisible(joinButton);
+    await tester.tap(joinButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter valid phone number'), findsOneWidget);
+
+    // Enter a valid NZ phone number
+    await tester.ensureVisible(phoneField);
+    await tester.enterText(phoneField, '021 123 4567');
+    await tester.ensureVisible(joinButton);
+    await tester.tap(joinButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter valid phone number'), findsNothing);
+  });
 }

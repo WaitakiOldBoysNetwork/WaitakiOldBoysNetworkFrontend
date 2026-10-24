@@ -47,6 +47,7 @@ DECLARE
   v_headline text;
   v_industry text;
   v_company text;
+  v_phone text;
   v_placeholder_avatar text;
 BEGIN
   v_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', '');
@@ -57,6 +58,7 @@ BEGIN
   v_headline   := NEW.raw_user_meta_data->>'headline';
   v_industry   := NEW.raw_user_meta_data->>'industry';
   v_company    := NEW.raw_user_meta_data->>'company';
+  v_phone      := NULLIF(TRIM(NEW.raw_user_meta_data->>'phone'), '');
 
   v_placeholder_avatar := public.generate_initials_avatar_url(v_first_name, v_last_name);
 
@@ -72,6 +74,8 @@ BEGIN
       headline   = COALESCE(NULLIF(v_headline, ''), public.profiles.headline),
       industry   = COALESCE(NULLIF(v_industry, ''), public.profiles.industry),
       company    = COALESCE(NULLIF(v_company, ''), public.profiles.company),
+      phone      = COALESCE(v_phone, public.profiles.phone),
+      "Phone"    = COALESCE(v_phone, public.profiles."Phone"),
       avatar_url = COALESCE(NULLIF(public.profiles.avatar_url, ''), v_placeholder_avatar),
       email      = COALESCE(NEW.email, public.profiles.email),
       "Email"    = COALESCE(NEW.email, public.profiles."Email"),
@@ -93,15 +97,17 @@ BEGIN
   IF NOT FOUND THEN
     INSERT INTO public.profiles (
       id, user_id, first_name, last_name, grad_year,
-      house, city, headline, industry, company, avatar_url, updated_at
+      house, city, headline, industry, company, phone, "Phone", avatar_url, updated_at
     ) VALUES (
       NEW.id, NEW.id, v_first_name, v_last_name, v_grad_year,
-      v_house, v_city, v_headline, v_industry, v_company, v_placeholder_avatar, NOW()
+      v_house, v_city, v_headline, v_industry, v_company, v_phone, v_phone, v_placeholder_avatar, NOW()
     )
     ON CONFLICT (id) DO UPDATE
       SET user_id    = EXCLUDED.user_id,
           first_name = COALESCE(NULLIF(EXCLUDED.first_name, ''), public.profiles.first_name),
           last_name  = COALESCE(NULLIF(EXCLUDED.last_name, ''), public.profiles.last_name),
+          phone      = COALESCE(EXCLUDED.phone, public.profiles.phone),
+          "Phone"    = COALESCE(EXCLUDED."Phone", public.profiles."Phone"),
           avatar_url = COALESCE(NULLIF(public.profiles.avatar_url, ''), EXCLUDED.avatar_url),
           updated_at = NOW();
   END IF;
