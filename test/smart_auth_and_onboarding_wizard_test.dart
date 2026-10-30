@@ -75,7 +75,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: OnboardingWizardScreen(
-            initialEmail: 'jake@waitakibhs.school.nz',
+            initialEmail: 'frank@waitakibhs.school.nz',
             initialStep: 1,
           ),
         ),
@@ -86,7 +86,7 @@ void main() {
       expect(find.text('Step 1: Account Credentials & Contact'), findsOneWidget);
 
       // Verify email is pre-filled
-      final emailField = find.widgetWithText(TextFormField, 'e.g. jake@waitakibhs.school.nz');
+      final emailField = find.widgetWithText(TextFormField, 'e.g. frank@waitakibhs.school.nz');
       expect(emailField, findsOneWidget);
 
       // Phone Number field
@@ -116,16 +116,26 @@ void main() {
 
       expect(find.text('Step 2: Profile & Academic Details'), findsOneWidget);
 
-      // Full Name inputs
+      // Full Name inputs with Frank Milner example hints
       expect(find.text('First Name'), findsOneWidget);
       expect(find.text('Last Name'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'e.g. Frank'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'e.g. Milner'), findsOneWidget);
 
-      // Age Dropdown
+      // Age typable selection box
       expect(find.text('Age'), findsOneWidget);
-      expect(find.text('Select your age (13 – 100)'), findsOneWidget);
+      final ageField = find.widgetWithText(TextFormField, 'Select your age (13 – 100)');
+      expect(ageField, findsOneWidget);
+      await tester.enterText(ageField, '17');
 
-      // Graduation Year Dropdown
+      // Graduation Year typable selection box supporting years above 2026
       expect(find.text('Graduation / Final Year at WBHS'), findsOneWidget);
+      final gradYearField = find.widgetWithText(
+        TextFormField,
+        'Select graduation year (1920 – 2035)',
+      );
+      expect(gradYearField, findsOneWidget);
+      await tester.enterText(gradYearField, '2028');
 
       // Action button
       expect(find.text('Next: Select House'), findsOneWidget);
@@ -172,6 +182,7 @@ void main() {
 
       expect(find.text('Sutherland House'), findsOneWidget);
       expect(find.text('White'), findsOneWidget);
+      expect(find.text('Jack Sutherland • Tradition & Waitaki Spirit'), findsOneWidget);
 
       // Complete Setup button
       final completeBtn = find.text('Complete Setup');

@@ -480,7 +480,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             onFieldSubmitted: (_) => _nextPage(),
             decoration: const InputDecoration(
               labelText: 'Full Name',
-              hintText: 'e.g. John Campbell',
+              hintText: 'e.g. Frank Milner',
               prefixIcon: Icon(Icons.person_outline, size: 20),
             ),
           ),

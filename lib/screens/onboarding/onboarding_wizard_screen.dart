@@ -48,6 +48,8 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   // Step 2 Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _gradYearController = TextEditingController();
   int? _selectedAge;
   int? _selectedGradYear;
   final _formKeyStep2 = GlobalKey<FormState>();
@@ -57,9 +59,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
   // Dropdown ranges
   static final int _currentYear = DateTime.now().year;
+  static const int _maxGradYear = 2035;
   static final List<int> _gradYears = List.generate(
-    _currentYear - 1960 + 1,
-    (index) => _currentYear - index,
+    _maxGradYear - 1940 + 1,
+    (index) => _maxGradYear - index,
   );
   static final List<int> _ageRange = List.generate(
     100 - 13 + 1,
@@ -115,7 +118,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       'color': Color(0xFF334155),
       'colorName': 'White',
       'isWhite': true,
-      'description': 'John Sutherland • Tradition & Waitaki Spirit',
+      'description': 'Jack Sutherland • Tradition & Waitaki Spirit',
       'icon': Icons.shield_rounded,
     },
   ];
@@ -137,6 +140,8 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     _passwordController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _ageController.dispose();
+    _gradYearController.dispose();
     super.dispose();
   }
 
@@ -163,9 +168,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             }
             if (_selectedGradYear == null && profile.gradYear != null) {
               _selectedGradYear = profile.gradYear;
+              _gradYearController.text = profile.gradYear.toString();
             }
             if (_selectedAge == null && profile.age != null) {
               _selectedAge = profile.age;
+              _ageController.text = profile.age.toString();
             }
             if (_selectedHouse == null && profile.house != null && profile.house!.isNotEmpty) {
               _selectedHouse = profile.house;
@@ -243,14 +250,23 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
   /// Step 2: Profile & Academic Details
   Future<void> _handleStep2Next() async {
+    final parsedAge = int.tryParse(_ageController.text.trim());
+    if (parsedAge != null) {
+      _selectedAge = parsedAge;
+    }
+    final parsedGradYear = int.tryParse(_gradYearController.text.trim());
+    if (parsedGradYear != null) {
+      _selectedGradYear = parsedGradYear;
+    }
+
     if (!_formKeyStep2.currentState!.validate()) return;
 
     if (_selectedAge == null) {
-      SnackbarHelper.showError(context, 'Please select your age');
+      SnackbarHelper.showError(context, 'Please enter or select your age');
       return;
     }
     if (_selectedGradYear == null) {
-      SnackbarHelper.showError(context, 'Please select your graduation year');
+      SnackbarHelper.showError(context, 'Please enter or select your graduation year');
       return;
     }
 
@@ -537,7 +553,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
-              hintText: 'e.g. jake@waitakibhs.school.nz',
+              hintText: 'e.g. frank@waitakibhs.school.nz',
               prefixIcon: Icon(Icons.email_outlined, size: 20),
             ),
             validator: (v) {
@@ -663,7 +679,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                     TextFormField(
                       controller: _firstNameController,
                       decoration: const InputDecoration(
-                        hintText: 'e.g. Jake',
+                        hintText: 'e.g. Frank',
                         prefixIcon: Icon(Icons.person_outline, size: 20),
                       ),
                       validator: (v) =>
@@ -685,7 +701,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                     TextFormField(
                       controller: _lastNameController,
                       decoration: const InputDecoration(
-                        hintText: 'e.g. Crossan',
+                        hintText: 'e.g. Milner',
                         prefixIcon: Icon(Icons.person_outline, size: 20),
                       ),
                       validator: (v) =>
@@ -698,51 +714,97 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Age Dropdown (13 - 100)
+          // Age (Typable + Dropdown 13 - 100)
           const Text(
             'Age',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           ),
           const SizedBox(height: 6),
-          DropdownButtonFormField<int>(
-            initialValue: _selectedAge,
-            isExpanded: true,
-            decoration: const InputDecoration(
+          TextFormField(
+            controller: _ageController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
               hintText: 'Select your age (13 – 100)',
-              prefixIcon: Icon(Icons.cake_outlined, size: 20),
+              prefixIcon: const Icon(Icons.cake_outlined, size: 20),
+              suffixIcon: PopupMenuButton<int>(
+                icon: const Icon(Icons.arrow_drop_down),
+                tooltip: 'Select age',
+                onSelected: (val) {
+                  setState(() {
+                    _selectedAge = val;
+                    _ageController.text = val.toString();
+                  });
+                },
+                itemBuilder: (context) => _ageRange
+                    .map(
+                      (age) => PopupMenuItem<int>(
+                        value: age,
+                        child: Text('$age years old'),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
-            items: _ageRange
-                .map((age) => DropdownMenuItem(
-                      value: age,
-                      child: Text('$age years old'),
-                    ))
-                .toList(),
-            onChanged: (val) => setState(() => _selectedAge = val),
-            validator: (v) => v == null ? 'Please select your age' : null,
+            onChanged: (val) {
+              setState(() {
+                _selectedAge = int.tryParse(val.trim());
+              });
+            },
+            validator: (v) {
+              final parsed = int.tryParse(v?.trim() ?? '') ?? _selectedAge;
+              if (parsed == null) return 'Please select your age';
+              if (parsed < 13 || parsed > 100) {
+                return 'Please enter an age between 13 and 100';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
 
-          // Graduation Year Dropdown (current down to 1960)
+          // Graduation Year (Typable + Dropdown 2035 down to 1940)
           const Text(
             'Graduation / Final Year at WBHS',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           ),
           const SizedBox(height: 6),
-          DropdownButtonFormField<int>(
-            initialValue: _selectedGradYear,
-            isExpanded: true,
+          TextFormField(
+            controller: _gradYearController,
+            keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              hintText: 'Select graduation year (1960 – $_currentYear)',
+              hintText: 'Select graduation year (1920 – $_maxGradYear)',
               prefixIcon: const Icon(Icons.school_outlined, size: 20),
+              suffixIcon: PopupMenuButton<int>(
+                icon: const Icon(Icons.arrow_drop_down),
+                tooltip: 'Select graduation year',
+                onSelected: (val) {
+                  setState(() {
+                    _selectedGradYear = val;
+                    _gradYearController.text = val.toString();
+                  });
+                },
+                itemBuilder: (context) => _gradYears
+                    .map(
+                      (year) => PopupMenuItem<int>(
+                        value: year,
+                        child: Text('Class of $year'),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
-            items: _gradYears
-                .map((year) => DropdownMenuItem(
-                      value: year,
-                      child: Text('Class of $year'),
-                    ))
-                .toList(),
-            onChanged: (val) => setState(() => _selectedGradYear = val),
-            validator: (v) => v == null ? 'Please select graduation year' : null,
+            onChanged: (val) {
+              setState(() {
+                _selectedGradYear = int.tryParse(val.trim());
+              });
+            },
+            validator: (v) {
+              final parsed = int.tryParse(v?.trim() ?? '') ?? _selectedGradYear;
+              if (parsed == null) return 'Please select graduation year';
+              if (parsed < 1920 || parsed > _maxGradYear) {
+                return 'Please enter a valid year between 1920 and $_maxGradYear';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 28),
 

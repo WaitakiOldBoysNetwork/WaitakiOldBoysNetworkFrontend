@@ -458,7 +458,7 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Cultores Mentium • Est. 1883\nOamaru, North Otago',
+              'Qaunti Est Sapere • Est. 1883\nOamaru, North Otago',
               style: TextStyle(
                 fontSize: 11.5,
                 color: AppColors.textSecondary,

@@ -325,7 +325,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Old Boys Network • Cultores Mentium',
+                            'Old Boys Network • Qaunti Est Sapere',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12.5,

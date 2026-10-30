@@ -310,7 +310,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Old Boys Network • Cultores Mentium',
+                        'Old Boys Network • Qaunti Est Sapere',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,

@@ -95,7 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'color': Color(0xFF334155),
       'isWhite': true,
       'colorName': 'White',
-      'description': 'White House • Named after John Sutherland',
+      'description': 'White House • Named after Jack Sutherland',
       'icon': Icons.shield_rounded,
     },
   ];

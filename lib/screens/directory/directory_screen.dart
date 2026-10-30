@@ -36,10 +36,10 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
 
   Timer? _debounce;
 
-  static final int _currentYear = DateTime.now().year;
+  static const int _maxGradYear = 2035;
   static final List<int> _gradYears = List.generate(
-    _currentYear - 1960 + 1,
-    (index) => _currentYear - index,
+    _maxGradYear - 1960 + 1,
+    (index) => _maxGradYear - index,
   );
   static final List<int> _ages = List.generate(
     100 - 13 + 1,
@@ -456,7 +456,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
           child: Text('All Years', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
         const PopupMenuDivider(),
-        ..._gradYears.take(45).map(
+        ..._gradYears.map(
           (year) => PopupMenuItem<int?>(
             value: year,
             child: Text('Class of $year'),
