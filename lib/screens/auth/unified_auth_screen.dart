@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../services/unified_auth_service.dart';
+import '../legal/legal_screens.dart';
 import 'otp_verification_screen.dart';
 
 /// Unified Authentication Screen providing frictionless toggling between
@@ -867,6 +868,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 20),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          const LegalLinksFooter(),
                         ],
                       ),
                     ),

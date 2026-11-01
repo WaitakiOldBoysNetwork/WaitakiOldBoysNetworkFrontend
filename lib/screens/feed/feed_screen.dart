@@ -12,6 +12,7 @@ import '../../services/directory_service.dart';
 import '../../services/feed_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
+import '../legal/legal_screens.dart';
 import '../profile/profile_screen.dart';
 import 'widgets/create_post_dialog.dart';
 import 'widgets/post_card.dart';
@@ -995,7 +996,7 @@ class _FeedScreenState extends State<FeedScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
           Text(
-            'Amor Patriae Nostra Lex',
+            'Qaunti Est Sapere',
             style: TextStyle(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -1003,7 +1004,12 @@ class _FeedScreenState extends State<FeedScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: 4),
+          SizedBox(height: 6),
+          LegalLinksFooter(
+            textAlign: TextAlign.start,
+            showPrefixText: false,
+          ),
+          SizedBox(height: 6),
           Text(
             '© 2026 Waitaki Boys\' High School Old Boys\' Association. All rights reserved.',
             style: TextStyle(

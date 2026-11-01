@@ -6,6 +6,7 @@ import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
+import '../legal/legal_screens.dart';
 
 /// Multi-Step Onboarding Wizard Screen
 /// Implements:
@@ -392,6 +393,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                       if (_currentStep == 1) _buildStep1AccountContact(),
                       if (_currentStep == 2) _buildStep2ProfileAcademic(),
                       if (_currentStep == 3) _buildStep3HouseSelection(),
+                      const SizedBox(height: 20),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      const LegalLinksFooter(),
                     ],
                   ),
                 ),

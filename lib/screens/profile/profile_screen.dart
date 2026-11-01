@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/directory_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
+import '../legal/legal_screens.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -918,6 +919,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
+                        const LegalLinksFooter(
+                          textAlign: TextAlign.start,
+                          showPrefixText: false,
                         ),
                       ],
                     ),

@@ -9,6 +9,7 @@ import '../services/profile_service.dart';
 import 'directory/directory_screen.dart';
 import 'feed/feed_screen.dart';
 import 'feed/widgets/create_post_dialog.dart';
+import 'legal/legal_screens.dart';
 import 'network/connections_screen.dart';
 import 'onboarding/onboarding_wizard_screen.dart';
 import 'profile/profile_screen.dart';
@@ -865,10 +866,14 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     borderRadius: BorderRadius.circular(12),
                     side: const BorderSide(color: AppColors.border),
                   ),
-                  offset: const Offset(0, -136),
+                  offset: const Offset(0, -210),
                   onSelected: (val) {
                     if (val == 'profile') {
                       _navigateToIndex(3);
+                    } else if (val == 'terms') {
+                      TermsAndConditionsScreen.show(context);
+                    } else if (val == 'privacy') {
+                      PrivacyPolicyScreen.show(context);
                     } else if (val == 'signout') {
                       _confirmSignOut();
                     } else if (val == 'delete_account') {
@@ -888,6 +893,36 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                           ),
                           SizedBox(width: 10),
                           Text('My Profile', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'terms',
+                      height: 38,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.gavel_rounded,
+                            size: 17,
+                            color: AppColors.textSecondary,
+                          ),
+                          SizedBox(width: 10),
+                          Text('Terms & Conditions', style: TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'privacy',
+                      height: 38,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.privacy_tip_outlined,
+                            size: 17,
+                            color: AppColors.textSecondary,
+                          ),
+                          SizedBox(width: 10),
+                          Text('Privacy Policy', style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),

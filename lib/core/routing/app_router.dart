@@ -5,6 +5,7 @@ import '../../models/auth_state.dart';
 import '../../screens/auth/otp_verification_screen.dart';
 import '../../screens/auth/unified_auth_screen.dart';
 import '../../screens/home_navigation_screen.dart';
+import '../../screens/legal/legal_screens.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unified_auth_service.dart';
 
@@ -81,6 +82,16 @@ class AppRouter {
         name: 'home',
         builder: (context, state) => const HomeNavigationScreen(initialIndex: 0),
       ),
+      GoRoute(
+        path: '/privacy',
+        name: 'privacy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/terms',
+        name: 'terms',
+        builder: (context, state) => const TermsAndConditionsScreen(),
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(
@@ -99,6 +110,9 @@ class AppRouter {
     final isAuthenticated = hasSupabaseSession || authState.isAuthenticated;
 
     final loc = state.matchedLocation;
+    if (loc == '/privacy' || loc == '/terms') {
+      return null;
+    }
     final isAuthRoute = loc == '/login' || loc == '/verify-otp';
     final isOnboardingRoute = loc == '/onboarding';
 

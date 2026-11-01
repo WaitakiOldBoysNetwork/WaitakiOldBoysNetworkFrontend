@@ -6,6 +6,7 @@ import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
 import '../../services/supabase_service.dart';
 import '../home_navigation_screen.dart';
+import '../legal/legal_screens.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -733,6 +734,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           color: AppColors.textMuted,
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      const LegalLinksFooter(),
                     ],
                   ),
                 ),
