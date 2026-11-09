@@ -34,6 +34,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _companyController;
 
   String? _bannerUrl;
+  bool _sharePhoneOnProfile = false;
   bool _isSaving = false;
   bool _isUploadingBanner = false;
   bool _isDeleting = false;
@@ -88,6 +89,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _companyController =
         TextEditingController(text: widget.profile.company ?? '');
     _bannerUrl = widget.profile.bannerUrl;
+    _sharePhoneOnProfile = widget.profile.sharePhoneOnProfile;
   }
 
   @override
@@ -192,6 +194,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         phone: _phoneController.text.trim(),
+        sharePhoneOnProfile: _sharePhoneOnProfile,
         headline: _headlineController.text.trim(),
         gradYear: gradYear,
         city: _cityController.text.trim(),
@@ -560,6 +563,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       labelText: 'Phone Number',
                       hintText: 'e.g. 021 123 4567 or +64 21 123 4567',
                       prefixIcon: Icon(Icons.phone_outlined, size: 20),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: SwitchListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 2,
+                      ),
+                      title: const Text(
+                        'Share phone number on my profile',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.navyDark,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Allow other Old Boys to view your phone number',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      value: _sharePhoneOnProfile,
+                      activeTrackColor: AppColors.navyPrimary,
+                      onChanged: (val) {
+                        setState(() => _sharePhoneOnProfile = val);
+                      },
                     ),
                   ),
                   const SizedBox(height: 18),

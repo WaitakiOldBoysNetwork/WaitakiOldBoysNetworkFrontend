@@ -961,7 +961,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (p.email != null && p.email!.trim().isNotEmpty) {
       items.add(_buildInfoRow(Icons.email_outlined, 'Email', p.email!));
     }
-    if (p.phone != null && p.phone!.trim().isNotEmpty) {
+    if (p.sharePhoneOnProfile && p.phone != null && p.phone!.trim().isNotEmpty) {
       items.add(_buildInfoRow(Icons.phone_outlined, 'Phone', p.phone!));
     }
 

@@ -60,94 +60,110 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   final _authService = AuthService();
-  bool _isSignUp = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   // Smart Auth Entry Gate State
-  bool _isEmailChecked = false;
-  bool _showIncompleteBanner = false;
-  int _incompleteStep = 2;
+  bool _showPasswordField = false;
+  String? _resolvedEmail;
 
   // Controllers
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _gradYearController = TextEditingController();
-  final _phoneController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _gradYearController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
-    if (_isSignUp) {
-      await _handleRegisterSubmit();
-    } else if (!_isEmailChecked) {
-      await _handleEmailContinue();
+    if (!_showPasswordField) {
+      await _handleIdentifierContinue();
     } else {
       await _handlePasswordLogin();
     }
   }
 
-  /// Step 1 of Smart Auth Entry Gate: Email First
-  Future<void> _handleEmailContinue() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-      SnackbarHelper.showError(context, 'Please enter a valid email address');
+  /// Step 1 of Flowchart Auth Entry: Single Phone number or Email check
+  Future<void> _handleIdentifierContinue() async {
+    final input = _identifierController.text.trim();
+    if (!AuthService.isValidEmailOrPhone(input)) {
+      SnackbarHelper.showError(
+        context,
+        'Please enter a valid phone number or email address',
+      );
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      final exists = await _authService.checkEmailExists(email);
-      if (mounted) {
-        if (!exists) {
-          // New User: Automatically route them into Step 1 of the Onboarding Wizard
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => OnboardingWizardScreen(
-                initialEmail: email,
-                initialStep: 1,
-                onCompleted: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => const HomeNavigationScreen(initialIndex: 1),
-                    ),
-                  );
-                },
-              ),
+      final status = await _authService.checkAccountAndOnboardingStatus(input);
+      if (!mounted) return;
+
+      final isEmail = AuthService.isEmailInput(input);
+
+      if (!status.hasAccount) {
+        // 1. No account -> route straight to onboarding (pre-filling entered phone/email),
+        // log in automatically on completion, and route to Main Feed (initialIndex: 0).
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OnboardingWizardScreen(
+              initialEmail: isEmail ? input : status.email,
+              initialPhone: !isEmail ? input : status.phone,
+              isNewAccount: true,
+              onCompleted: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => const HomeNavigationScreen(initialIndex: 0),
+                  ),
+                );
+              },
             ),
-          );
-        } else {
-          // Existing User: Reveal the Password input field with a "Log In" button
-          setState(() {
-            _isEmailChecked = true;
-          });
-        }
+          ),
+        );
+      } else if (!status.onboardingCompleted) {
+        // 2. Has account + unfinished onboarding -> route directly to finish onboarding,
+        // then route to Main Feed (initialIndex: 0).
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OnboardingWizardScreen(
+              initialEmail: status.email ?? (isEmail ? input : null),
+              initialPhone: status.phone ?? (!isEmail ? input : null),
+              initialStep: status.onboardingStep,
+              isNewAccount: false,
+              onCompleted: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => const HomeNavigationScreen(initialIndex: 0),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        // 3. Has account + finished onboarding -> show the password input to log in
+        setState(() {
+          _showPasswordField = true;
+          _resolvedEmail = status.email ?? (isEmail ? input : null);
+        });
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Error checking email: $e');
+        SnackbarHelper.showError(context, 'Error checking account: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// Step 2 of Smart Auth Entry Gate: Password Authentication
+  /// Step 2 of Flowchart Auth Entry: Password Login -> Main Feed (initialIndex: 0)
   Future<void> _handlePasswordLogin() async {
-    final email = _emailController.text.trim();
+    final input = _identifierController.text.trim();
     final password = _passwordController.text.trim();
     if (password.isEmpty) {
       SnackbarHelper.showError(context, 'Please enter your password');
@@ -156,70 +172,43 @@ class _AuthScreenState extends State<AuthScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final res = await _authService.signInWithPassword(email: email, password: password);
+      final res = await _authService.signInWithPassword(
+        email: _resolvedEmail ?? input,
+        password: password,
+      );
       final userId = res.user?.id ?? SupabaseService.currentUserId;
 
       if (userId != null && mounted) {
         final isCompleted = await _authService.checkOnboardingCompleted(userId);
         if (!mounted) return;
         if (isCompleted) {
-          // Redirect directly to /directory
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => const HomeNavigationScreen(initialIndex: 1),
+              builder: (_) => const HomeNavigationScreen(initialIndex: 0),
             ),
           );
         } else {
+          final isEmail = AuthService.isEmailInput(input);
           final step = await _authService.getUserOnboardingStep(userId);
           if (!mounted) return;
-          setState(() {
-            _showIncompleteBanner = true;
-            _incompleteStep = step;
-          });
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => OnboardingWizardScreen(
+                initialEmail: _resolvedEmail ?? (isEmail ? input : null),
+                initialPhone: !isEmail ? input : null,
+                initialStep: step,
+                onCompleted: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const HomeNavigationScreen(initialIndex: 0),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackbarHelper.showError(context, _parseAuthError(e));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _handleRegisterSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    try {
-      final gradYear = int.tryParse(_gradYearController.text.trim());
-      final phone = _phoneController.text.trim();
-      await _authService.signUpWithPassword(
-        email: email,
-        password: password,
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        gradYear: gradYear,
-        phone: phone.isNotEmpty ? phone : null,
-      );
-      if (mounted) {
-        await AuthScreen.showEmailConfirmationDialog(
-          context,
-          email,
-          onDismiss: () {
-            if (mounted) {
-              setState(() {
-                _isSignUp = false;
-                _isEmailChecked = false;
-                _passwordController.clear();
-                _phoneController.clear();
-              });
-            }
-          },
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -244,8 +233,8 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _handleMagicLink() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
+    final input = (_resolvedEmail ?? _identifierController.text).trim();
+    if (input.isEmpty || !input.contains('@')) {
       SnackbarHelper.showError(
         context,
         'Please enter a valid email address first',
@@ -255,9 +244,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await _authService.sendMagicLink(email: email);
+      await _authService.sendMagicLink(email: input);
       if (mounted) {
-        await AuthScreen.showMagicLinkConfirmationDialog(context, email);
+        await AuthScreen.showMagicLinkConfirmationDialog(context, input);
       }
     } catch (e) {
       if (mounted) {
@@ -310,7 +299,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      const Text(
                         'Old Boys Network • Qaunti Est Sapere',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -320,292 +309,35 @@ class _AuthScreenState extends State<AuthScreen> {
                           letterSpacing: 0.3,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
 
-                      // Segmented switcher
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceMuted,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _isSignUp = false),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: !_isSignUp
-                                        ? AppColors.surface
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: !_isSignUp
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.04,
-                                              ),
-                                              blurRadius: 4,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    'Sign In',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontWeight: !_isSignUp
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: !_isSignUp
-                                          ? AppColors.navyPrimary
-                                          : AppColors.textSecondary,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _isSignUp = true),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _isSignUp
-                                        ? AppColors.surface
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: _isSignUp
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.04,
-                                              ),
-                                              blurRadius: 4,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Text(
-                                    'Register',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontWeight: _isSignUp
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: _isSignUp
-                                          ? AppColors.navyPrimary
-                                          : AppColors.textSecondary,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Sign Up Fields
-                      if (_isSignUp) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _firstNameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'First Name',
-                                  prefixIcon: Icon(
-                                    Icons.person_outline,
-                                    size: 20,
-                                  ),
-                                ),
-                                validator: (v) =>
-                                    _isSignUp && (v == null || v.trim().isEmpty)
-                                    ? 'Required'
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _lastNameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Last Name',
-                                ),
-                                validator: (v) =>
-                                    _isSignUp && (v == null || v.trim().isEmpty)
-                                    ? 'Required'
-                                    : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
+                      // Single Phone Number or Email Input (when not yet verified)
+                      if (!_showPasswordField) ...[
                         TextFormField(
-                          controller: _gradYearController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Graduation / Final Year (e.g. 2014)',
-                            prefixIcon: Icon(
-                              Icons.calendar_today_outlined,
-                              size: 20,
-                            ),
-                          ),
-                          validator: (v) {
-                            if (!_isSignUp) return null;
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Required';
-                            }
-                            final parsed = int.tryParse(v);
-                            if (parsed == null ||
-                                parsed < 1920 ||
-                                parsed > 2035) {
-                              return 'Enter valid year';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          autofillHints: const [AutofillHints.telephoneNumber],
-                          decoration: const InputDecoration(
-                            labelText: 'Phone Number',
-                            hintText: 'e.g. 021 123 4567 or +64 21 123 4567',
-                            prefixIcon: Icon(
-                              Icons.phone_outlined,
-                              size: 20,
-                            ),
-                          ),
-                          validator: (v) {
-                            if (!_isSignUp) return null;
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Required';
-                            }
-                            final clean = v.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
-                            if (clean.length < 7 || !RegExp(r'^[0-9]+$').hasMatch(clean)) {
-                              return 'Enter valid phone number';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // Incomplete Onboarding Prompt Banner
-                      if (_showIncompleteBanner) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: AppColors.crimson.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.crimson.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline_rounded,
-                                    color: AppColors.crimson,
-                                    size: 22,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Finish setting up your profile to access the directory',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: AppColors.navyDark,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => OnboardingWizardScreen(
-                                        initialStep: _incompleteStep,
-                                        onCompleted: () {
-                                          Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const HomeNavigationScreen(
-                                                initialIndex: 1,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.crimson,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Complete Setup',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      // Email Field (Visible in Sign Up or when entering email in Sign In)
-                      if (_isSignUp || !_isEmailChecked) ...[
-                        TextFormField(
-                          controller: _emailController,
+                          controller: _identifierController,
                           keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _handleSubmit(),
                           decoration: const InputDecoration(
-                            labelText: 'Email Address',
-                            prefixIcon: Icon(Icons.mail_outline, size: 20),
+                            labelText: 'Phone Number or Email',
+                            hintText: 'e.g. 021 123 4567 or oldboy@waitakibhs.school.nz',
+                            prefixIcon: Icon(
+                              Icons.contact_mail_outlined,
+                              size: 20,
+                            ),
                           ),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Email is required';
-                            }
-                            if (!v.contains('@') || !v.contains('.')) {
-                              return 'Enter a valid email';
+                            if (v == null || !AuthService.isValidEmailOrPhone(v)) {
+                              return 'Enter a valid phone number or email';
                             }
                             return null;
                           },
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 20),
                       ],
 
-                      // If Existing User on Sign In tab: Display confirmed email + Change link
-                      if (!_isSignUp && _isEmailChecked) ...[
+                      // Confirmed Phone/Email + Change link & Password Field
+                      if (_showPasswordField) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
@@ -626,7 +358,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  _emailController.text,
+                                  _identifierController.text.trim(),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
@@ -637,7 +369,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               TextButton(
                                 onPressed: () {
                                   setState(() {
-                                    _isEmailChecked = false;
+                                    _showPasswordField = false;
+                                    _resolvedEmail = null;
                                     _passwordController.clear();
                                   });
                                 },
@@ -650,13 +383,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                      ],
-
-                      // Password Field (Visible in Sign Up or after email is checked in Sign In)
-                      if (_isSignUp || _isEmailChecked) ...[
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _handleSubmit(),
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock_outline, size: 20),
@@ -677,16 +408,13 @@ class _AuthScreenState extends State<AuthScreen> {
                             if (v == null || v.isEmpty) {
                               return 'Password is required';
                             }
-                            if (_isSignUp && v.length < 6) {
-                              return 'Password must be at least 6 characters';
-                            }
                             return null;
                           },
                         ),
                         const SizedBox(height: 24),
                       ],
 
-                      // Submit Button
+                      // Primary Continue / Log In Button
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
@@ -702,9 +430,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                               )
                             : Text(
-                                _isSignUp
-                                    ? 'Join Old Boys Network'
-                                    : (!_isEmailChecked ? 'Continue' : 'Log In'),
+                                !_showPasswordField ? 'Continue' : 'Log In',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
@@ -713,8 +439,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Magic Link Alternative for Sign In
-                      if (!_isSignUp) ...[
+                      // Magic Link Option when an email is entered
+                      if (_showPasswordField &&
+                          (_resolvedEmail?.contains('@') ?? false)) ...[
                         OutlinedButton.icon(
                           onPressed: _isLoading ? null : _handleMagicLink,
                           icon: const Icon(Icons.send_rounded, size: 16),
@@ -724,12 +451,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       ],
 
                       // Info text
-                      Text(
-                        _isSignUp
-                            ? 'Your email will be auto-matched with pre-registered Waitaki Old Boys records.'
-                            : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
+                      const Text(
+                        'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textMuted,
                         ),
@@ -804,9 +529,9 @@ class EmailConfirmationDialog extends StatelessWidget {
                 height: 78,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                        colors: [AppColors.navyPrimary, AppColors.navyDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                    colors: [AppColors.navyPrimary, AppColors.navyDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [

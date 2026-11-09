@@ -22,7 +22,7 @@ class AppRouter {
 
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: '/directory',
+    initialLocation: '/home',
     refreshListenable: UnifiedAuthService(),
     redirect: _routeGuard,
     routes: [
@@ -35,7 +35,7 @@ class AppRouter {
             if (authService.state.status == UnifiedAuthStatus.onboardingRequired) {
               context.go('/onboarding');
             } else {
-              context.go('/directory');
+              context.go('/home');
             }
           },
         ),
@@ -54,7 +54,7 @@ class AppRouter {
               if (authService.state.status == UnifiedAuthStatus.onboardingRequired) {
                 context.go('/onboarding');
               } else {
-                context.go('/directory');
+                context.go('/home');
               }
             },
           );
@@ -67,8 +67,10 @@ class AppRouter {
           final authState = UnifiedAuthService().state;
           final step = authState.onboardingStep > 0 ? authState.onboardingStep : 1;
           return OnboardingWizardScreen(
+            initialEmail: authState.email,
+            initialPhone: authState.phoneNumber,
             initialStep: step,
-            onCompleted: () => context.go('/directory'),
+            onCompleted: () => context.go('/home'),
           );
         },
       ),
@@ -128,9 +130,9 @@ class AppRouter {
       return isOnboardingRoute ? null : '/onboarding';
     }
 
-    // 3. Authenticated, onboarded users visiting login or onboarding get redirected to directory
+    // 3. Authenticated, onboarded users visiting login or onboarding get redirected to home feed
     if (isAuthRoute || isOnboardingRoute) {
-      return '/directory';
+      return '/home';
     }
 
     return null;

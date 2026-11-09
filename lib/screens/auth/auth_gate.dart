@@ -147,6 +147,13 @@ class _AuthGateState extends State<AuthGate> {
       final gradYear = meta?['grad_year'] != null
           ? int.tryParse(meta!['grad_year'].toString())
           : null;
+      final age = meta?['age'] != null
+          ? int.tryParse(meta!['age'].toString())
+          : null;
+      final phone = meta?['phone']?.toString();
+      final sharePhone = meta?['share_phone_on_profile'] is bool
+          ? meta!['share_phone_on_profile'] as bool
+          : null;
 
       await AuthService().ensureProfileExists(
         userId: user.id,
@@ -154,6 +161,9 @@ class _AuthGateState extends State<AuthGate> {
         firstName: firstName,
         lastName: lastName,
         gradYear: gradYear,
+        age: age,
+        phone: phone,
+        sharePhoneOnProfile: sharePhone,
       );
     } catch (_) {
       // Non-fatal — the profile will be fixed on next profile update
@@ -188,10 +198,12 @@ class _AuthGateState extends State<AuthGate> {
     if (_session != null) {
       if (_needsOnboarding) {
         return OnboardingWizardScreen(
+          initialEmail: _session?.user.email,
+          initialPhone: _session?.user.userMetadata?['phone']?.toString(),
           onCompleted: _onOnboardingCompleted,
         );
       }
-      return const HomeNavigationScreen(initialIndex: 1);
+      return const HomeNavigationScreen(initialIndex: 0);
     }
 
     return const AuthScreen();

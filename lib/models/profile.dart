@@ -14,6 +14,7 @@ class Profile {
   final String? bio;
   final String? email;
   final String? phone;
+  final bool sharePhoneOnProfile;
   final int? age;
   final bool? isOnboarded;
   final int? onboardingStep;
@@ -37,6 +38,7 @@ class Profile {
     this.bio,
     this.email,
     this.phone,
+    this.sharePhoneOnProfile = false,
     this.age,
     this.isOnboarded,
     this.onboardingStep,
@@ -182,6 +184,8 @@ class Profile {
       bio: json['bio']?.toString() ?? json['Short Bio']?.toString() ?? json['Full Bio']?.toString(),
       email: json['email']?.toString() ?? json['Email']?.toString().trim(),
       phone: json['phone']?.toString() ?? json['Phone']?.toString(),
+      sharePhoneOnProfile: json['share_phone_on_profile'] == true ||
+          json['share_phone_on_profile'] == 'true',
       age: json['age'] != null
           ? int.tryParse(json['age'].toString())
           : (json['Age'] != null ? int.tryParse(json['Age'].toString()) : null),
@@ -217,8 +221,9 @@ class Profile {
       if (company != null) ...{'company': company, 'Company / Organisation': company},
       if (openToHelping != null) ...{'open_to_helping': openToHelping, 'Open to helping': openToHelping},
       if (lookingFor != null) ...{'looking_for': lookingFor, 'Looking for': lookingFor},
-      if (email != null) 'Email': email,
-      if (phone != null) 'Phone': phone,
+      if (email != null) ...{'email': email, 'Email': email},
+      if (phone != null) ...{'phone': phone, 'Phone': phone},
+      'share_phone_on_profile': sharePhoneOnProfile,
       if (age != null) 'age': age,
       if (isOnboarded != null) ...{
         'is_onboarded': isOnboarded,
@@ -244,6 +249,7 @@ class Profile {
     String? bio,
     String? email,
     String? phone,
+    bool? sharePhoneOnProfile,
     int? age,
     bool? isOnboarded,
     int? onboardingStep,
@@ -267,6 +273,7 @@ class Profile {
       bio: bio ?? this.bio,
       email: email ?? this.email,
       phone: phone ?? this.phone,
+      sharePhoneOnProfile: sharePhoneOnProfile ?? this.sharePhoneOnProfile,
       age: age ?? this.age,
       isOnboarded: isOnboarded ?? this.isOnboarded,
       onboardingStep: onboardingStep ?? this.onboardingStep,

@@ -70,20 +70,25 @@ class ProfileService {
       // Order by updated_at descending and take 1 to gracefully handle legacy duplicates
       final response = await _client
           .from('profiles')
-          .select(
-            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for, phone, email',
-          )
+          .select('*')
           .or('user_id.eq.$userId,id.eq.$userId')
           .order('updated_at', ascending: false)
           .limit(1);
 
       if (response.isNotEmpty) {
-        var profile = Profile.fromJson(response.first);
+        final rawRow = response.first;
+        var profile = Profile.fromJson(rawRow);
         // Fallback banner check from user metadata or SharedPreferences if column not populated
         if (profile.bannerUrl == null || profile.bannerUrl!.isEmpty) {
           final fallbackBanner = await _getFallbackBanner(userId);
           if (fallbackBanner != null && fallbackBanner.isNotEmpty) {
             profile = profile.copyWith(bannerUrl: fallbackBanner);
+          }
+        }
+        if (!rawRow.containsKey('share_phone_on_profile')) {
+          final fallbackSharePhone = await _getFallbackSharePhone(userId);
+          if (fallbackSharePhone != null) {
+            profile = profile.copyWith(sharePhoneOnProfile: fallbackSharePhone);
           }
         }
         _cachedCurrentProfile = profile;
@@ -97,6 +102,7 @@ class ProfileService {
       final authUser = SupabaseService.currentUser;
       final meta = authUser?.userMetadata;
       final fallbackBanner = await _getFallbackBanner(userId);
+      final fallbackSharePhone = await _getFallbackSharePhone(userId);
       final placeholder = Profile(
         id: userId,
         userId: userId,
@@ -109,6 +115,14 @@ class ProfileService {
         company: meta?['company']?.toString(),
         bio: meta?['bio']?.toString(),
         phone: meta?['phone']?.toString(),
+        sharePhoneOnProfile: fallbackSharePhone ??
+            (meta?['share_phone_on_profile'] == true ||
+                meta?['share_phone_on_profile'] == 'true'),
+        age: meta?['age'] != null
+            ? int.tryParse(meta!['age'].toString())
+            : null,
+        isOnboarded: meta?['is_onboarded'] == true ||
+            meta?['is_onboarded'] == 'true',
         email: authUser?.email,
         bannerUrl: fallbackBanner,
         gradYear: meta?['grad_year'] != null
@@ -133,15 +147,14 @@ class ProfileService {
     try {
       final response = await _client
           .from('profiles')
-          .select(
-            'id, user_id, first_name, last_name, headline, bio, house, grad_year, city, industry, company, avatar_url, banner_url, open_to_helping, looking_for, phone, email',
-          )
+          .select('*')
           .or('id.eq.$id,user_id.eq.$id')
           .order('updated_at', ascending: false)
           .limit(1);
 
       if (response.isNotEmpty) {
-        var profile = Profile.fromJson(response.first);
+        final rawRow = response.first;
+        var profile = Profile.fromJson(rawRow);
         final currentUserId = SupabaseService.currentUserId;
         if ((profile.bannerUrl == null || profile.bannerUrl!.isEmpty) &&
             currentUserId != null &&
@@ -151,12 +164,34 @@ class ProfileService {
             profile = profile.copyWith(bannerUrl: fallbackBanner);
           }
         }
+        if (!rawRow.containsKey('share_phone_on_profile') &&
+            currentUserId != null &&
+            (id == currentUserId || profile.userId == currentUserId)) {
+          final fallbackSharePhone = await _getFallbackSharePhone(currentUserId);
+          if (fallbackSharePhone != null) {
+            profile = profile.copyWith(sharePhoneOnProfile: fallbackSharePhone);
+          }
+        }
         return profile;
       }
       return null;
     } catch (_) {
       return null;
     }
+  }
+
+  Future<bool?> _getFallbackSharePhone(String userId) async {
+    final metaVal =
+        SupabaseService.currentUser?.userMetadata?['share_phone_on_profile'];
+    if (metaVal is bool) return metaVal;
+    if (metaVal != null) return metaVal.toString() == 'true';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.containsKey('sp_share_phone_$userId')) {
+        return prefs.getBool('sp_share_phone_$userId');
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<String?> _getFallbackBanner(String userId) async {
@@ -190,6 +225,7 @@ class ProfileService {
     String? openToHelping,
     String? lookingFor,
     String? phone,
+    bool? sharePhoneOnProfile,
     int? age,
     int? onboardingStep,
     bool? isOnboarded,
@@ -208,8 +244,10 @@ class ProfileService {
       'Name': fullName,
       'headline': headline?.trim(),
       'What are you up to': headline?.trim(),
-      'grad_year': gradYear,
-      'Year left School': gradYear,
+      if (gradYear != null) ...{
+        'grad_year': gradYear,
+        'Year left School': gradYear,
+      },
       'city': city?.trim(),
       'Region': city?.trim(),
       'house': house?.trim(),
@@ -225,6 +263,8 @@ class ProfileService {
         'phone': phone.trim().isEmpty ? null : phone.trim(),
         'Phone': phone.trim().isEmpty ? null : phone.trim(),
       },
+      if (sharePhoneOnProfile != null)
+        'share_phone_on_profile': sharePhoneOnProfile,
       if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
         'avatar_url': avatarUrl.trim(),
       if (openToHelping != null) ...{
@@ -252,6 +292,9 @@ class ProfileService {
       if (onboardingStep != null) {
         await prefs.setInt('sp_onboarding_step_$userId', onboardingStep);
       }
+      if (sharePhoneOnProfile != null) {
+        await prefs.setBool('sp_share_phone_$userId', sharePhoneOnProfile);
+      }
       if (isOnboarded != null) {
         await prefs.setBool('sp_onboarding_completed_$userId', isOnboarded);
         if (isOnboarded) markOnboardingCompleted(userId);
@@ -268,7 +311,8 @@ class ProfileService {
           'first_name': cleanFirst,
           'last_name': cleanLast,
           'headline': headline?.trim(),
-          'grad_year': gradYear,
+          if (gradYear != null) 'grad_year': gradYear,
+          if (age != null) 'age': age,
           'city': city?.trim(),
           'house': house?.trim(),
           'industry': industry?.trim(),
@@ -276,6 +320,9 @@ class ProfileService {
           'bio': bio?.trim(),
           if (phone != null)
             'phone': phone.trim().isEmpty ? null : phone.trim(),
+          if (sharePhoneOnProfile != null)
+            'share_phone_on_profile': sharePhoneOnProfile,
+          if (isOnboarded != null) 'is_onboarded': isOnboarded,
           if (openToHelping != null) 'open_to_helping': openToHelping.trim(),
           if (lookingFor != null) 'looking_for': lookingFor.trim(),
           if (bannerUrl != null)
@@ -346,9 +393,18 @@ class ProfileService {
       });
       invalidateCache();
     } catch (e) {
-      // If banner_url column does not exist in the database table yet, retry without banner_url
-      if (e.toString().contains('banner_url') && data.containsKey('banner_url')) {
+      final errStr = e.toString();
+      bool removedColumn = false;
+      if (errStr.contains('banner_url') && data.containsKey('banner_url')) {
         data.remove('banner_url');
+        removedColumn = true;
+      }
+      if (errStr.contains('share_phone_on_profile') &&
+          data.containsKey('share_phone_on_profile')) {
+        data.remove('share_phone_on_profile');
+        removedColumn = true;
+      }
+      if (removedColumn) {
         if (existing != null) {
           await _client
               .from('profiles')
@@ -371,14 +427,17 @@ class ProfileService {
 
   /// Onboarding completion workflow
   Future<void> completeOnboarding({
-    required String house,
-    required int gradYear,
-    required String city,
-    required String headline,
-    required String industry,
+    String? house,
+    int? gradYear,
+    String? city,
+    String? headline,
+    String? industry,
     String? company,
     String? bio,
     String? avatarUrl,
+    String? phone,
+    bool? sharePhoneOnProfile,
+    int? age,
     bool openToHelping = true,
   }) async {
     final userId = SupabaseService.currentUserId;
@@ -428,6 +487,10 @@ class ProfileService {
       industry: industry,
       company: company,
       bio: bio,
+      phone: phone,
+      sharePhoneOnProfile: sharePhoneOnProfile,
+      age: age,
+      isOnboarded: true,
       openToHelping: openToHelping ? 'true' : null,
     );
 
@@ -469,16 +532,22 @@ class ProfileService {
       final profile = await getCurrentProfile();
       if (profile == null) return true;
 
-      // If user already has house, gradYear, and (city or headline or industry)
+      if (profile.isOnboarded == true) {
+        _onboardingCompletedUsers.add(userId);
+        await prefs.setBool('sp_onboarding_completed_$userId', true);
+        return false;
+      }
+
+      final hasName = (profile.firstName != null &&
+              profile.firstName!.trim().isNotEmpty) ||
+          (profile.lastName != null && profile.lastName!.trim().isNotEmpty);
+      final hasAge = profile.age != null;
+      final hasPhone =
+          profile.phone != null && profile.phone!.trim().isNotEmpty;
       final hasHouse =
           profile.house != null && profile.house!.trim().isNotEmpty;
-      final hasGradYear = profile.gradYear != null;
-      final hasLocationOrCareer = (profile.city != null &&
-              profile.city!.trim().isNotEmpty) ||
-          (profile.headline != null && profile.headline!.trim().isNotEmpty) ||
-          (profile.industry != null && profile.industry!.trim().isNotEmpty);
 
-      if (hasHouse && hasGradYear && hasLocationOrCareer) {
+      if ((hasName && hasAge && hasPhone) || (hasName && hasHouse)) {
         _onboardingCompletedUsers.add(userId);
         await prefs.setBool('sp_onboarding_completed_$userId', true);
         return false;

@@ -13,7 +13,7 @@ void main() {
   });
 
   group('UnifiedAuthScreen Widget Tests', () {
-    testWidgets('Renders Email & Phone tabs and toggles between them', (tester) async {
+    testWidgets('Renders single Phone Number or Email input and Continue button', (tester) async {
       tester.view.physicalSize = const Size(1280, 1100);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -28,58 +28,10 @@ void main() {
       // Verify Header Branding
       expect(find.text('Waitaki Old Boys'), findsOneWidget);
 
-      // Verify Segmented Control items exist
-      expect(find.text('Email'), findsOneWidget);
-      expect(find.text('Phone OTP'), findsOneWidget);
-
-      // Initially on Email tab -> Email field is visible
-      expect(find.text('Email Address'), findsOneWidget);
-      expect(find.text('Password'), findsOneWidget);
-
-      // Switch to Phone OTP tab
-      await tester.tap(find.text('Phone OTP'));
-      await tester.pumpAndSettle();
-
-      // Mobile number field & NZ country code is visible
-      expect(find.text('Mobile Number'), findsOneWidget);
-      expect(find.text('+64'), findsOneWidget);
-      expect(find.text('Send Verification Code'), findsOneWidget);
-
-      // Switch back to Email tab
-      await tester.tap(find.text('Email'));
-      await tester.pumpAndSettle();
-      expect(find.text('Email Address'), findsOneWidget);
-    });
-
-    testWidgets('Email Register mode displays real-time password strength meter', (tester) async {
-      tester.view.physicalSize = const Size(1280, 1100);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: UnifiedAuthScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Switch to New Account (Register) sub-mode
-      await tester.tap(find.text('New Account'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('First Name'), findsOneWidget);
-      expect(find.text('Last Name'), findsOneWidget);
-
-      // Type weak password
-      final passwordField = find.widgetWithText(TextFormField, 'Password');
-      await tester.enterText(passwordField, 'abc');
-      await tester.pumpAndSettle();
-      expect(find.text('Weak'), findsOneWidget);
-
-      // Type strong password
-      await tester.enterText(passwordField, 'Waitaki2024!Strong');
-      await tester.pumpAndSettle();
-      expect(find.text('Strong'), findsOneWidget);
+      // Verify single Phone Number or Email input and Continue button
+      expect(find.text('Phone Number or Email'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+      expect(find.text('Password'), findsNothing);
     });
   });
 

@@ -17,16 +17,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify initial screen is Sign In
-    expect(find.text('Sign In'), findsWidgets);
+    // Verify initial screen has single Phone Number or Email input
+    expect(find.text('Phone Number or Email'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
 
-    // Switch to Register (Sign Up) tab
-    final signUpTab = find.text('Register');
-    expect(signUpTab, findsOneWidget);
-    await tester.tap(signUpTab);
-    await tester.pumpAndSettle();
-
-    // Find the state to trigger the confirmation dialog
     // Invoke the email confirmation dialog
     AuthScreen.showEmailConfirmationDialog(
       tester.element(find.byType(AuthScreen)),
@@ -58,7 +52,7 @@ void main() {
     expect(find.text('Check Your Inbox'), findsNothing);
   });
 
-  testWidgets('AuthScreen Register tab displays Phone Number field and validates input',
+  testWidgets('AuthScreen single Phone Number or Email input validates input and routes to onboarding',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1280, 1100);
     tester.view.devicePixelRatio = 1.0;
@@ -71,41 +65,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Switch to Register (Sign Up) tab
-    await tester.tap(find.text('Register'));
+    expect(find.text('Phone Number or Email'), findsOneWidget);
+
+    final continueButton = find.text('Continue');
+    expect(continueButton, findsOneWidget);
+
+    // Enter a valid NZ phone number and tap Continue -> routes to onboarding with phone pre-filled
+    final inputField = find.widgetWithText(TextFormField, 'Phone Number or Email');
+    await tester.enterText(inputField, '021 123 4567');
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
 
-    // Verify Phone Number field is present with phone icon
-    expect(find.text('Phone Number'), findsOneWidget);
-    expect(find.byIcon(Icons.phone_outlined), findsOneWidget);
-
-    // Scroll to submit button and tap without filling fields to trigger validation
-    final joinButton = find.text('Join Old Boys Network');
-    expect(joinButton, findsOneWidget);
-    await tester.ensureVisible(joinButton);
-    await tester.tap(joinButton);
-    await tester.pumpAndSettle();
-
-    // Required error should show
-    expect(find.text('Required'), findsWidgets);
-
-    // Enter an invalid short phone number
-    final phoneField = find.widgetWithText(TextFormField, 'Phone Number');
-    await tester.ensureVisible(phoneField);
-    await tester.enterText(phoneField, '123');
-    await tester.ensureVisible(joinButton);
-    await tester.tap(joinButton);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Enter valid phone number'), findsOneWidget);
-
-    // Enter a valid NZ phone number
-    await tester.ensureVisible(phoneField);
-    await tester.enterText(phoneField, '021 123 4567');
-    await tester.ensureVisible(joinButton);
-    await tester.tap(joinButton);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Enter valid phone number'), findsNothing);
+    expect(find.text('Complete Your Profile Setup'), findsOneWidget);
+    expect(find.text('021 123 4567'), findsOneWidget);
   });
 }

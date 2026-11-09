@@ -58,18 +58,26 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     try {
       final profile = await _profileService.getCurrentProfile();
       if (mounted && profile != null) {
-        final isCompleted = profile.isOnboarded == true ||
-            (profile.house != null &&
-                profile.house!.trim().isNotEmpty &&
-                profile.gradYear != null);
+        final hasName = (profile.firstName != null &&
+                profile.firstName!.trim().isNotEmpty) ||
+            (profile.lastName != null &&
+                profile.lastName!.trim().isNotEmpty);
+        final hasAge = profile.age != null;
+        final hasPhone =
+            profile.phone != null && profile.phone!.trim().isNotEmpty;
+        final hasHouse =
+            profile.house != null && profile.house!.trim().isNotEmpty;
 
-        final step = profile.onboardingStep ??
-            (profile.house == null || profile.house!.isEmpty ? 3 : 2);
+        final isCompleted = profile.isOnboarded == true ||
+            (hasName && hasAge && hasPhone) ||
+            (hasName && hasHouse);
+
+        final step = profile.onboardingStep ?? 1;
 
         setState(() {
           _currentProfile = profile;
           _hasIncompleteOnboarding = !isCompleted;
-          _incompleteStep = step.clamp(2, 3);
+          _incompleteStep = step;
         });
 
         // If user accessed /directory directly while onboarding is incomplete, redirect immediately
@@ -86,12 +94,14 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => OnboardingWizardScreen(
+          initialEmail: _currentProfile?.email,
+          initialPhone: _currentProfile?.phone,
           initialStep: _incompleteStep,
           onCompleted: () {
             Navigator.of(context).pop();
             setState(() {
               _hasIncompleteOnboarding = false;
-              _currentIndex = 1;
+              _currentIndex = 0;
             });
             _loadProfile();
           },
