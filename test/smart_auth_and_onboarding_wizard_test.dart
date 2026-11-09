@@ -72,7 +72,7 @@ void main() {
   });
 
   group('2. Simplified Consolidated Onboarding (No Grad Year)', () {
-    testWidgets('Renders Name, Age, Phone Number, Share Phone toggle, and credentials without Graduation Year',
+    testWidgets('Renders Name, Age, Phone Number, Share my contact info toggle, and credentials without Graduation Year',
         (tester) async {
       tester.view.physicalSize = const Size(1280, 1100);
       tester.view.devicePixelRatio = 1.0;
@@ -93,12 +93,12 @@ void main() {
       expect(find.text('Waitaki Old Boys'), findsOneWidget);
       expect(find.text('Complete Your Profile Setup'), findsOneWidget);
 
-      // Verify Name, Age, Phone Number, and Share Phone toggle exist
+      // Verify Name, Age, Phone Number, and Share my contact info toggle exist
       expect(find.text('First Name'), findsOneWidget);
       expect(find.text('Last Name'), findsOneWidget);
       expect(find.text('Age'), findsOneWidget);
       expect(find.text('Phone Number'), findsOneWidget);
-      expect(find.text('Share phone number on my profile'), findsOneWidget);
+      expect(find.text('Share my contact info'), findsOneWidget);
 
       // Verify Graduation Year is NOT present anywhere
       expect(find.textContaining('Graduation'), findsNothing);
@@ -125,8 +125,8 @@ void main() {
         'Waitaki1883!',
       );
 
-      // Toggle "Share phone number on my profile"
-      await tester.tap(find.text('Share phone number on my profile'));
+      // Toggle "Share my contact info"
+      await tester.tap(find.text('Share my contact info'));
       await tester.pumpAndSettle();
 
       // Tap Complete Setup
@@ -139,17 +139,18 @@ void main() {
     });
   });
 
-  group('3. Profile Phone Visibility Enforcement', () {
-    testWidgets('ProfileScreen hides phone number when sharePhoneOnProfile is false and shows when true',
+  group('3. Profile Contact Visibility Enforcement', () {
+    testWidgets('ProfileScreen hides email and phone when sharePhoneOnProfile is false and shows both when true',
         (tester) async {
       tester.view.physicalSize = const Size(1280, 1100);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      final hiddenPhoneProfile = Profile(
+      final hiddenContactProfile = Profile(
         id: 'p-1',
         firstName: 'Ian',
         lastName: 'Milner',
+        email: 'ian@waitakibhs.school.nz',
         phone: '021 999 8888',
         sharePhoneOnProfile: false,
       );
@@ -158,15 +159,16 @@ void main() {
         MaterialApp(
           home: ProfileScreen(
             userId: 'p-1',
-            initialProfile: hiddenPhoneProfile,
+            initialProfile: hiddenContactProfile,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
+      expect(find.text('ian@waitakibhs.school.nz'), findsNothing);
       expect(find.text('021 999 8888'), findsNothing);
 
-      final visiblePhoneProfile = hiddenPhoneProfile.copyWith(
+      final visibleContactProfile = hiddenContactProfile.copyWith(
         sharePhoneOnProfile: true,
       );
 
@@ -174,16 +176,17 @@ void main() {
         MaterialApp(
           home: ProfileScreen(
             userId: 'p-1',
-            initialProfile: visiblePhoneProfile,
+            initialProfile: visibleContactProfile,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
+      expect(find.text('ian@waitakibhs.school.nz'), findsOneWidget);
       expect(find.text('021 999 8888'), findsOneWidget);
     });
 
-    testWidgets('EditProfileScreen exposes Share phone number on my profile toggle',
+    testWidgets('EditProfileScreen exposes Share my contact info toggle',
         (tester) async {
       tester.view.physicalSize = const Size(1280, 1100);
       tester.view.devicePixelRatio = 1.0;
@@ -204,7 +207,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Share phone number on my profile'), findsOneWidget);
+      expect(find.text('Share my contact info'), findsOneWidget);
     });
   });
 

@@ -958,11 +958,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (p.lookingFor != null && p.lookingFor!.trim().isNotEmpty) {
       items.add(_buildInfoRow(Icons.search_outlined, 'Looking For', p.lookingFor!));
     }
-    if (p.email != null && p.email!.trim().isNotEmpty) {
-      items.add(_buildInfoRow(Icons.email_outlined, 'Email', p.email!));
-    }
-    if (p.sharePhoneOnProfile && p.phone != null && p.phone!.trim().isNotEmpty) {
-      items.add(_buildInfoRow(Icons.phone_outlined, 'Phone', p.phone!));
+    if (p.shareContactInfo) {
+      if (p.email != null && p.email!.trim().isNotEmpty) {
+        items.add(_buildInfoRow(Icons.email_outlined, 'Email', p.email!));
+      }
+      if (p.phone != null && p.phone!.trim().isNotEmpty) {
+        items.add(_buildInfoRow(Icons.phone_outlined, 'Phone', p.phone!));
+      }
     }
 
     if (items.isEmpty) return const SizedBox.shrink();

@@ -12,7 +12,7 @@
 ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS share_phone_on_profile boolean NOT NULL DEFAULT false;
 
-COMMENT ON COLUMN public.profiles.share_phone_on_profile IS 'True when the user has opted in to displaying their phone number on their profile';
+COMMENT ON COLUMN public.profiles.share_phone_on_profile IS 'True when the user has opted in to sharing their contact info (email and phone number) on their profile';
 
 -- Update handle_new_user() trigger to persist share_phone_on_profile, age, and is_onboarded
 CREATE OR REPLACE FUNCTION public.handle_new_user()

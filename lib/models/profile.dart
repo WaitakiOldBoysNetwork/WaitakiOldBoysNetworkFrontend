@@ -16,6 +16,9 @@ class Profile {
   final String? phone;
   final bool sharePhoneOnProfile;
   final int? age;
+
+  /// True when the user has opted in to sharing their contact info (email & phone) on their profile.
+  bool get shareContactInfo => sharePhoneOnProfile;
   final bool? isOnboarded;
   final int? onboardingStep;
   final String? openToHelping;
@@ -184,7 +187,9 @@ class Profile {
       bio: json['bio']?.toString() ?? json['Short Bio']?.toString() ?? json['Full Bio']?.toString(),
       email: json['email']?.toString() ?? json['Email']?.toString().trim(),
       phone: json['phone']?.toString() ?? json['Phone']?.toString(),
-      sharePhoneOnProfile: json['share_phone_on_profile'] == true ||
+      sharePhoneOnProfile: json['share_contact_info'] == true ||
+          json['share_contact_info'] == 'true' ||
+          json['share_phone_on_profile'] == true ||
           json['share_phone_on_profile'] == 'true',
       age: json['age'] != null
           ? int.tryParse(json['age'].toString())

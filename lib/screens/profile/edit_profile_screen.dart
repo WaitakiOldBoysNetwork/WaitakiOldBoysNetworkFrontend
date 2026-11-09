@@ -578,7 +578,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         vertical: 2,
                       ),
                       title: const Text(
-                        'Share phone number on my profile',
+                        'Share my contact info',
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
@@ -586,7 +586,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                       subtitle: const Text(
-                        'Allow other Old Boys to view your phone number',
+                        'Allow other Old Boys to view your email and phone number',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,

@@ -414,7 +414,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Share phone number on my profile toggle
+                        // Share my contact info toggle (controls both email and phone visibility)
                         Container(
                           decoration: BoxDecoration(
                             color: AppColors.surfaceMuted,
@@ -427,7 +427,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                               vertical: 2,
                             ),
                             title: const Text(
-                              'Share phone number on my profile',
+                              'Share my contact info',
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
@@ -435,7 +435,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                               ),
                             ),
                             subtitle: const Text(
-                              'Allow other Old Boys to view your phone number',
+                              'Allow other Old Boys to view your email and phone number',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,

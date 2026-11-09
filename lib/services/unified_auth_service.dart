@@ -293,13 +293,16 @@ class UnifiedAuthService extends ChangeNotifier {
     }
   }
 
-  /// Completes the multi-step onboarding sequence
+  /// Completes the onboarding sequence
   Future<void> completeOnboarding({
     required String fullName,
     String? avatarUrl,
-    required List<String> interests,
+    List<String> interests = const [],
     String? house,
     int? gradYear,
+    int? age,
+    String? phone,
+    bool? sharePhoneOnProfile,
   }) async {
     _setState(_state.copyWith(status: UnifiedAuthStatus.loading));
     try {
@@ -321,14 +324,21 @@ class UnifiedAuthService extends ChangeNotifier {
           firstName: firstName,
           lastName: lastName,
           avatarUrl: finalAvatar,
-          house: house ?? 'Don',
-          gradYear: gradYear ?? DateTime.now().year,
+          house: house,
+          gradYear: gradYear,
+          age: age,
+          phone: phone,
+          sharePhoneOnProfile: sharePhoneOnProfile,
+          isOnboarded: true,
           headline: interests.isNotEmpty ? interests.join(' • ') : 'Waitaki Old Boy',
         );
 
         await _profileService.completeOnboarding(
-          house: house ?? 'Don',
-          gradYear: gradYear ?? DateTime.now().year,
+          house: house,
+          gradYear: gradYear,
+          age: age,
+          phone: phone,
+          sharePhoneOnProfile: sharePhoneOnProfile,
           city: 'New Zealand',
           headline: interests.isNotEmpty ? interests.join(' • ') : 'Waitaki Old Boy',
           industry: interests.isNotEmpty ? interests.first : 'General',
