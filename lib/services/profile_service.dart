@@ -17,22 +17,32 @@ class ProfileService {
   // In-memory set of user IDs who have completed or skipped onboarding during this app run
   static final Set<String> _onboardingCompletedUsers = {};
 
+  /// Notifies listeners (e.g. AuthGate) immediately when onboarding completion changes in memory.
+  static final ValueNotifier<int> onboardingStateVersion = ValueNotifier<int>(0);
+
+  /// Returns true if the user has already completed onboarding in memory.
+  static bool isOnboardingCompletedInMemory(String userId) =>
+      _onboardingCompletedUsers.contains(userId);
+
   /// Explicitly clear in-memory profile cache and user tracking
   static void invalidateCache() {
     _cachedCurrentProfile = null;
     _cachedUserId = null;
     _cacheTimestamp = null;
     _onboardingCompletedUsers.clear();
+    onboardingStateVersion.value++;
   }
 
   /// Mark onboarding completed in memory
   static void markOnboardingCompleted(String userId) {
     _onboardingCompletedUsers.add(userId);
+    onboardingStateVersion.value++;
   }
 
   /// Reset in-memory onboarding completion tracking (for logout or tests)
   static void resetOnboardingMemory() {
     _onboardingCompletedUsers.clear();
+    onboardingStateVersion.value++;
   }
 
   @visibleForTesting

@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../home_navigation_screen.dart';
 import '../legal/legal_screens.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
+import 'auth_gate.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -97,6 +99,9 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
+    final hasAuthGate =
+        context.findAncestorWidgetOfExactType<AuthGate>() != null;
+
     setState(() => _isLoading = true);
     try {
       final status = await _authService.checkAccountAndOnboardingStatus(input);
@@ -109,17 +114,21 @@ class _AuthScreenState extends State<AuthScreen> {
         // log in automatically on completion, and route to Main Feed (initialIndex: 0).
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => OnboardingWizardScreen(
+            builder: (routeContext) => OnboardingWizardScreen(
               initialEmail: isEmail ? input : status.email,
               initialPhone: !isEmail ? input : status.phone,
               isNewAccount: true,
               onCompleted: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const HomeNavigationScreen(initialIndex: 0),
-                  ),
-                  (route) => false,
-                );
+                if (hasAuthGate) {
+                  Navigator.of(routeContext).popUntil((route) => route.isFirst);
+                } else {
+                  Navigator.of(routeContext).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const HomeNavigationScreen(initialIndex: 0),
+                    ),
+                  );
+                }
               },
             ),
           ),
@@ -129,18 +138,22 @@ class _AuthScreenState extends State<AuthScreen> {
         // then route to Main Feed (initialIndex: 0).
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => OnboardingWizardScreen(
+            builder: (routeContext) => OnboardingWizardScreen(
               initialEmail: status.email ?? (isEmail ? input : null),
               initialPhone: status.phone ?? (!isEmail ? input : null),
               initialStep: status.onboardingStep,
               isNewAccount: false,
               onCompleted: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const HomeNavigationScreen(initialIndex: 0),
-                  ),
-                  (route) => false,
-                );
+                if (hasAuthGate) {
+                  Navigator.of(routeContext).popUntil((route) => route.isFirst);
+                } else {
+                  Navigator.of(routeContext).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const HomeNavigationScreen(initialIndex: 0),
+                    ),
+                  );
+                }
               },
             ),
           ),
@@ -170,6 +183,10 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
+    final hasAuthGate =
+        context.findAncestorWidgetOfExactType<AuthGate>() != null;
+    final navigator = Navigator.of(context);
+
     setState(() => _isLoading = true);
     try {
       final res = await _authService.signInWithPassword(
@@ -178,33 +195,33 @@ class _AuthScreenState extends State<AuthScreen> {
       );
       final userId = res.user?.id ?? SupabaseService.currentUserId;
 
-      if (userId != null && mounted) {
+      if (userId != null) {
         final isCompleted = await _authService.checkOnboardingCompleted(userId);
-        if (!mounted) return;
         if (isCompleted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (_) => const HomeNavigationScreen(initialIndex: 0),
-            ),
-            (route) => false,
-          );
-        } else {
+          ProfileService.markOnboardingCompleted(userId);
+          if (!hasAuthGate && mounted) {
+            navigator.pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const HomeNavigationScreen(initialIndex: 0),
+              ),
+            );
+          }
+        } else if (!hasAuthGate && mounted) {
           final isEmail = AuthService.isEmailInput(input);
           final step = await _authService.getUserOnboardingStep(userId);
           if (!mounted) return;
-          Navigator.of(context).pushReplacement(
+          navigator.pushReplacement(
             MaterialPageRoute(
-              builder: (_) => OnboardingWizardScreen(
+              builder: (routeContext) => OnboardingWizardScreen(
                 initialEmail: _resolvedEmail ?? (isEmail ? input : null),
                 initialPhone: !isEmail ? input : null,
                 initialStep: step,
                 onCompleted: () {
-                  Navigator.of(context).pushAndRemoveUntil(
+                  Navigator.of(routeContext).pushReplacement(
                     MaterialPageRoute(
                       builder: (_) =>
                           const HomeNavigationScreen(initialIndex: 0),
                     ),
-                    (route) => false,
                   );
                 },
               ),
@@ -618,6 +635,7 @@ class EmailConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -625,7 +643,7 @@ class EmailConfirmationDialog extends StatelessWidget {
       backgroundColor: AppColors.surface,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -859,6 +877,7 @@ class _MagicLinkConfirmationDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -866,7 +885,7 @@ class _MagicLinkConfirmationDialogState
       backgroundColor: AppColors.surface,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,

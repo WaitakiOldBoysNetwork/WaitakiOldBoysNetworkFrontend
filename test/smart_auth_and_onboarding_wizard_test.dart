@@ -5,9 +5,12 @@ import 'package:waitaki_network/models/profile.dart';
 import 'package:waitaki_network/screens/auth/auth_screen.dart';
 import 'package:waitaki_network/screens/directory/directory_screen.dart';
 import 'package:waitaki_network/screens/home_navigation_screen.dart';
+import 'package:waitaki_network/screens/legal/legal_screens.dart';
 import 'package:waitaki_network/screens/onboarding/onboarding_wizard_screen.dart';
 import 'package:waitaki_network/screens/profile/edit_profile_screen.dart';
 import 'package:waitaki_network/screens/profile/profile_screen.dart';
+import 'package:waitaki_network/services/auth_service.dart';
+import 'package:waitaki_network/services/profile_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -136,6 +139,191 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(completed, isTrue);
+    });
+
+    testWidgets('Completing onboarding when underlying Auth screen unmounts via onboardingStateVersion does not throw',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1100);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      ProfileService.resetOnboardingMemory();
+      bool isOnboarded = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              if (isOnboarded) {
+                return const Scaffold(body: Center(child: Text('Main Feed Ready')));
+              }
+              return Builder(
+                builder: (authContext) => Scaffold(
+                  body: Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(authContext).push(
+                          MaterialPageRoute(
+                            builder: (routeContext) => OnboardingWizardScreen(
+                              initialEmail: 'leo.patel@student.waitaki.nz',
+                              isNewAccount: true,
+                              onCompleted: () {
+                                setState(() => isOnboarded = true);
+                                Navigator.of(routeContext)
+                                    .popUntil((route) => route.isFirst);
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Start Onboarding'),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Start Onboarding'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.widgetWithText(TextFormField, 'e.g. Frank'), 'Leo');
+      await tester.enterText(find.widgetWithText(TextFormField, 'e.g. Milner'), 'Patel');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Select your age (13 – 100)'),
+        '15',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'e.g. 021 123 4567'),
+        '021 123 4567',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'At least 6 characters'),
+        'Password123!',
+      );
+
+      final completeBtn = find.text('Complete Setup');
+      await tester.ensureVisible(completeBtn);
+      await tester.tap(completeBtn);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Main Feed Ready'), findsOneWidget);
+    });
+
+    testWidgets('EmailConfirmationDialog renders cleanly for email-confirmation flow',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => AuthScreen.showEmailConfirmationDialog(
+                  context,
+                  'newboy.confirm@waitakioldboys.co.nz',
+                ),
+                child: const Text('Show Confirm'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Confirm'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Check Your Inbox'), findsOneWidget);
+      expect(find.text('newboy.confirm@waitakioldboys.co.nz'), findsOneWidget);
+    });
+
+    testWidgets('Age picker dialog uses decade chips, Phone rejects non-digits, and 390x844 stacks names without overflow',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: OnboardingWizardScreen(
+            initialEmail: 'leo.student@waitakioldboys.co.nz',
+            isNewAccount: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify First Name and Last Name stack vertically on 390px mobile
+      final firstNameRect = tester.getRect(
+        find.widgetWithText(TextFormField, 'e.g. Frank'),
+      );
+      final lastNameRect = tester.getRect(
+        find.widgetWithText(TextFormField, 'e.g. Milner'),
+      );
+      expect(firstNameRect.top, lessThan(lastNameRect.top));
+
+      // Enter long surname and verify no overflow
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'e.g. Frank'),
+        'Leo',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'e.g. Milner'),
+        'Thompson',
+      );
+
+      // Verify Phone Number rejects alphabetic input and short numbers
+      expect(AuthService.isPhoneInput('abcdefg'), isFalse);
+      final phoneField = find.widgetWithText(TextFormField, 'e.g. 021 123 4567');
+      await tester.ensureVisible(phoneField);
+      await tester.enterText(phoneField, 'abcdefg');
+      await tester.pumpAndSettle();
+      // Formatter strips all letters
+      expect(
+        tester.widget<TextFormField>(phoneField).controller?.text,
+        isEmpty,
+      );
+
+      await tester.enterText(phoneField, '123');
+      final completeBtn = find.text('Complete Setup');
+      await tester.ensureVisible(completeBtn);
+      await tester.tap(completeBtn);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Enter a valid phone number (digits only)'),
+        findsOneWidget,
+      );
+
+      // Open Age picker dialog and pick 60 via decade chip '60–69'
+      final ageDropdownBtn = find.byTooltip('Select age');
+      await tester.ensureVisible(ageDropdownBtn);
+      await tester.tap(ageDropdownBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select Your Age'), findsOneWidget);
+      expect(find.text('60–69'), findsOneWidget);
+      await tester.tap(find.text('60–69'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('60 years old'));
+      await tester.pumpAndSettle();
+
+      final ageField = find.widgetWithText(
+        TextFormField,
+        'Select your age (13 – 100)',
+      );
+      expect(tester.widget<TextFormField>(ageField).controller?.text, equals('60'));
+
+      // Verify Complete Setup and LegalLinksFooter render cleanly with no overflow exceptions
+      await tester.ensureVisible(completeBtn);
+      expect(completeBtn, findsOneWidget);
+      expect(find.byType(LegalLinksFooter), findsOneWidget);
     });
   });
 

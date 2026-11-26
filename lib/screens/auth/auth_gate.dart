@@ -33,6 +33,8 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
+    ProfileService.onboardingStateVersion
+        .addListener(_handleOnboardingVersionChanged);
     if (_isConfigured && SupabaseService.isInitialized) {
       _initAuth();
     } else {
@@ -42,8 +44,22 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   void dispose() {
+    ProfileService.onboardingStateVersion
+        .removeListener(_handleOnboardingVersionChanged);
     _authSubscription?.cancel();
     super.dispose();
+  }
+
+  void _handleOnboardingVersionChanged() {
+    final userId = _currentUserId;
+    if (!mounted || userId == null) return;
+    if (ProfileService.isOnboardingCompletedInMemory(userId) &&
+        (_needsOnboarding || _isLoading)) {
+      setState(() {
+        _needsOnboarding = false;
+        _isLoading = false;
+      });
+    }
   }
 
   void _onConfigured() {
@@ -109,6 +125,17 @@ class _AuthGateState extends State<AuthGate> {
     final userId = session.user.id;
     _session = session;
     _currentUserId = userId;
+
+    if (ProfileService.isOnboardingCompletedInMemory(userId)) {
+      if (mounted) {
+        setState(() {
+          _needsOnboarding = false;
+          _isLoading = false;
+        });
+      }
+      _backfillProfileIfNeeded(session.user);
+      return;
+    }
 
     if (mounted) {
       setState(() {

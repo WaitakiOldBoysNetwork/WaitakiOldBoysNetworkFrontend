@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -47,6 +48,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _sharePhoneOnProfile = false;
+  String? _errorMessage;
 
   // Controllers
   final _firstNameController = TextEditingController();
@@ -57,11 +59,6 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   final _passwordController = TextEditingController();
 
   int? _selectedAge;
-
-  static final List<int> _ageRange = List.generate(
-    100 - 13 + 1,
-    (index) => 13 + index,
-  );
 
   bool get _needsCredentials {
     if (widget.isNewAccount) return true;
@@ -146,7 +143,25 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     );
   }
 
+  Future<void> _showAgePickerDialog() async {
+    final chosen = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => _AgePickerDialog(
+        initialAge: _selectedAge ?? int.tryParse(_ageController.text.trim()),
+      ),
+    );
+    if (chosen != null && mounted) {
+      setState(() {
+        _selectedAge = chosen;
+        _ageController.text = chosen.toString();
+        _errorMessage = null;
+      });
+    }
+  }
+
   Future<void> _handleCompleteSetup() async {
+    setState(() => _errorMessage = null);
+
     final parsedAge = int.tryParse(_ageController.text.trim());
     if (parsedAge != null) {
       _selectedAge = parsedAge;
@@ -155,7 +170,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedAge == null) {
-      SnackbarHelper.showError(context, 'Please enter or select your age');
+      setState(() => _errorMessage = 'Please enter or select your age.');
       return;
     }
 
@@ -250,6 +265,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             }
           }
         }
+
+        if (userId != null && !requiresEmailConfirmation) {
+          ProfileService.markOnboardingCompleted(userId);
+        }
       }
 
       if (requiresEmailConfirmation) {
@@ -301,13 +320,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         'Welcome to the Waitaki Old Boys Network!',
       );
 
-      final nav = Navigator.maybeOf(context);
-      if (widget.onCompleted != null && nav != null) {
-        try {
-          widget.onCompleted!();
-        } catch (_) {}
-      } else if (nav != null) {
-        nav.pushAndRemoveUntil(
+      if (widget.onCompleted != null) {
+        widget.onCompleted!();
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (_) => const HomeNavigationScreen(initialIndex: 0),
           ),
@@ -316,16 +332,92 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
+        setState(() {
+          _errorMessage = AuthService.formatAuthError(e);
+        });
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  InputDecoration _buildInputDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+    required bool isCompact,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      isDense: isCompact,
+      contentPadding: isCompact
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+          : null,
+      prefixIconConstraints: isCompact
+          ? const BoxConstraints(minWidth: 38, minHeight: 38)
+          : null,
+      prefixIcon: Icon(prefixIcon, size: isCompact ? 18 : 20),
+      suffixIcon: suffixIcon,
+    );
+  }
+
+  Widget _buildFirstNameField(bool isCompact) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'First Name',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _firstNameController,
+          decoration: _buildInputDecoration(
+            hintText: 'e.g. Frank',
+            prefixIcon: Icons.person_outline,
+            isCompact: isCompact,
+          ),
+          onChanged: (_) {
+            if (_errorMessage != null) setState(() => _errorMessage = null);
+          },
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Required' : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLastNameField(bool isCompact) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Last Name',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _lastNameController,
+          decoration: _buildInputDecoration(
+            hintText: 'e.g. Milner',
+            prefixIcon: Icons.person_outline,
+            isCompact: isCompact,
+          ),
+          onChanged: (_) {
+            if (_errorMessage != null) setState(() => _errorMessage = null);
+          },
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Required' : null,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final showCredentials = _needsCredentials;
+    final isCompact = MediaQuery.of(context).size.width < 480;
+    final fieldGap = isCompact ? 12.0 : 16.0;
     final prefilledIdentifier = (widget.initialEmail != null &&
             widget.initialEmail!.trim().isNotEmpty)
         ? widget.initialEmail!.trim()
@@ -339,7 +431,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 12 : 20,
+              vertical: isCompact ? 12 : 24,
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 540),
               child: Card(
@@ -351,9 +446,9 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                 ),
                 color: AppColors.surface,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 28,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 16 : 24,
+                    vertical: isCompact ? 18 : 28,
                   ),
                   child: Form(
                     key: _formKey,
@@ -377,19 +472,20 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                 horizontal: 8,
                                 vertical: 4,
                               ),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        _buildHeader(),
-                        const SizedBox(height: 18),
+                        SizedBox(height: isCompact ? 2 : 4),
+                        _buildHeader(isCompact),
+                        SizedBox(height: isCompact ? 12 : 18),
 
                         // Context Banner for New Account vs Existing Incomplete Account
                         if (prefilledIdentifier != null) ...[
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
+                              horizontal: 12,
+                              vertical: 9,
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.navyPrimary
@@ -425,76 +521,25 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: fieldGap),
                         ],
 
-                        // Name Row (First Name & Last Name)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'First Name',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: _firstNameController,
-                                    decoration: const InputDecoration(
-                                      hintText: 'e.g. Frank',
-                                      prefixIcon: Icon(
-                                        Icons.person_outline,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    validator: (v) =>
-                                        (v == null || v.trim().isEmpty)
-                                            ? 'Required'
-                                            : null,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Last Name',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: _lastNameController,
-                                    decoration: const InputDecoration(
-                                      hintText: 'e.g. Milner',
-                                      prefixIcon: Icon(
-                                        Icons.person_outline,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    validator: (v) =>
-                                        (v == null || v.trim().isEmpty)
-                                            ? 'Required'
-                                            : null,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        // Name Inputs (stacked vertically on narrow mobile to prevent clipping)
+                        if (isCompact) ...[
+                          _buildFirstNameField(isCompact),
+                          SizedBox(height: fieldGap),
+                          _buildLastNameField(isCompact),
+                        ] else
+                          Row(
+                            children: [
+                              Expanded(child: _buildFirstNameField(isCompact)),
+                              const SizedBox(width: 14),
+                              Expanded(child: _buildLastNameField(isCompact)),
+                            ],
+                          ),
+                        SizedBox(height: fieldGap),
 
-                        // Age (Typable + Dropdown 13 - 100)
+                        // Age (Typable + Bounded Picker Dialog 13 - 100)
                         const Text(
                           'Age',
                           style: TextStyle(
@@ -506,35 +551,24 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         TextFormField(
                           controller: _ageController,
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(3),
+                          ],
+                          decoration: _buildInputDecoration(
                             hintText: 'Select your age (13 – 100)',
-                            prefixIcon: const Icon(
-                              Icons.cake_outlined,
-                              size: 20,
-                            ),
-                            suffixIcon: PopupMenuButton<int>(
+                            prefixIcon: Icons.cake_outlined,
+                            isCompact: isCompact,
+                            suffixIcon: IconButton(
                               icon: const Icon(Icons.arrow_drop_down),
                               tooltip: 'Select age',
-                              constraints: const BoxConstraints(maxHeight: 320),
-                              onSelected: (val) {
-                                setState(() {
-                                  _selectedAge = val;
-                                  _ageController.text = val.toString();
-                                });
-                              },
-                              itemBuilder: (context) => _ageRange
-                                  .map(
-                                    (age) => PopupMenuItem<int>(
-                                      value: age,
-                                      child: Text('$age years old'),
-                                    ),
-                                  )
-                                  .toList(),
+                              onPressed: _showAgePickerDialog,
                             ),
                           ),
                           onChanged: (val) {
                             setState(() {
                               _selectedAge = int.tryParse(val.trim());
+                              _errorMessage = null;
                             });
                           },
                           validator: (v) {
@@ -547,7 +581,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: fieldGap),
 
                         // Phone Number
                         const Text(
@@ -562,10 +596,21 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         TextFormField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9\s\-\(\)\+]'),
+                            ),
+                          ],
+                          decoration: _buildInputDecoration(
                             hintText: 'e.g. 021 123 4567',
-                            prefixIcon: Icon(Icons.phone_outlined, size: 20),
+                            prefixIcon: Icons.phone_outlined,
+                            isCompact: isCompact,
                           ),
+                          onChanged: (_) {
+                            if (_errorMessage != null) {
+                              setState(() => _errorMessage = null);
+                            }
+                          },
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
                               return 'Phone number is required';
@@ -576,7 +621,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: isCompact ? 10 : 12),
 
                         // Share my contact info toggle (controls both email and phone visibility)
                         Material(
@@ -616,7 +661,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
                         // Email & Password Credentials (when creating a new account or unauthenticated)
                         if (showCredentials) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: fieldGap),
                           const Text(
                             'Email Address',
                             style: TextStyle(
@@ -629,10 +674,16 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
+                            decoration: _buildInputDecoration(
                               hintText: 'e.g. frank@waitakibhs.school.nz',
-                              prefixIcon: Icon(Icons.email_outlined, size: 20),
+                              prefixIcon: Icons.email_outlined,
+                              isCompact: isCompact,
                             ),
+                            onChanged: (_) {
+                              if (_errorMessage != null) {
+                                setState(() => _errorMessage = null);
+                              }
+                            },
                             validator: (v) {
                               if (!showCredentials) return null;
                               if (v == null || v.trim().isEmpty) {
@@ -644,7 +695,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: fieldGap),
                           Text(
                             widget.isNewAccount
                                 ? 'Create Password'
@@ -659,12 +710,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-                            decoration: InputDecoration(
+                            decoration: _buildInputDecoration(
                               hintText: 'At least 6 characters',
-                              prefixIcon: const Icon(
-                                Icons.lock_outline,
-                                size: 20,
-                              ),
+                              prefixIcon: Icons.lock_outline,
+                              isCompact: isCompact,
                               suffixIcon: IconButton(
                                 tooltip: _obscurePassword
                                     ? 'Show password'
@@ -681,6 +730,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                 ),
                               ),
                             ),
+                            onChanged: (_) {
+                              if (_errorMessage != null) {
+                                setState(() => _errorMessage = null);
+                              }
+                            },
                             validator: (v) {
                               if (!showCredentials) return null;
                               if (v == null || v.trim().isEmpty) {
@@ -694,7 +748,62 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                           ),
                         ],
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: isCompact ? 16 : 24),
+
+                        // Inline Error Banner (never covers Create Password or Complete Setup)
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: AppColors.crimson.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.crimson.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: AppColors.crimson,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: AppColors.crimson,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Dismiss error',
+                                  icon: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: AppColors.crimson,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 24,
+                                    minHeight: 24,
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _errorMessage = null),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
 
                         // Complete Setup Action Button
                         ElevatedButton(
@@ -732,7 +841,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                 ),
                         ),
 
-                        const SizedBox(height: 20),
+                        SizedBox(height: isCompact ? 14 : 20),
                         const Divider(height: 1),
                         const SizedBox(height: 12),
                         const LegalLinksFooter(),
@@ -748,12 +857,13 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isCompact) {
+    final badgeSize = isCompact ? 44.0 : 56.0;
     return Column(
       children: [
         Container(
-          width: 56,
-          height: 56,
+          width: badgeSize,
+          height: badgeSize,
           decoration: BoxDecoration(
             color: AppColors.navyPrimary,
             borderRadius: BorderRadius.circular(14),
@@ -765,19 +875,19 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
               ),
             ],
           ),
-          child: const Center(
+          child: Center(
             child: Icon(
               Icons.school_rounded,
               color: AppColors.goldAccent,
-              size: 32,
+              size: isCompact ? 26 : 32,
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        const Text(
+        SizedBox(height: isCompact ? 8 : 12),
+        Text(
           'Waitaki Old Boys',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: isCompact ? 20 : 22,
             fontWeight: FontWeight.bold,
             color: AppColors.navyDark,
             letterSpacing: -0.5,
@@ -794,6 +904,145 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AgePickerDialog extends StatefulWidget {
+  final int? initialAge;
+
+  const _AgePickerDialog({this.initialAge});
+
+  @override
+  State<_AgePickerDialog> createState() => _AgePickerDialogState();
+}
+
+class _AgePickerDialogState extends State<_AgePickerDialog> {
+  static const List<({String label, int min, int max})> _decades = [
+    (label: '13–19', min: 13, max: 19),
+    (label: '20–29', min: 20, max: 29),
+    (label: '30–39', min: 30, max: 39),
+    (label: '40–49', min: 40, max: 49),
+    (label: '50–59', min: 50, max: 59),
+    (label: '60–69', min: 60, max: 69),
+    (label: '70+', min: 70, max: 100),
+  ];
+
+  late int _selectedDecadeIndex;
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDecadeIndex = _decadeIndexForAge(widget.initialAge);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  int _decadeIndexForAge(int? age) {
+    if (age == null) return 0;
+    for (var i = 0; i < _decades.length; i++) {
+      if (age >= _decades[i].min && age <= _decades[i].max) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final range = _decades[_selectedDecadeIndex];
+    final ages = List<int>.generate(
+      range.max - range.min + 1,
+      (i) => range.min + i,
+    );
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 340, maxHeight: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Select Your Age',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.navyDark,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: List.generate(_decades.length, (i) {
+                  final selected = i == _selectedDecadeIndex;
+                  return ChoiceChip(
+                    label: Text(_decades[i].label),
+                    selected: selected,
+                    onSelected: (_) {
+                      setState(() => _selectedDecadeIndex = i);
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(0);
+                      }
+                    },
+                  );
+                }),
+              ),
+              const SizedBox(height: 10),
+              const Divider(height: 1),
+              Expanded(
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    itemCount: ages.length,
+                    itemBuilder: (context, index) {
+                      final age = ages[index];
+                      final isSelected = widget.initialAge == age;
+                      return ListTile(
+                        dense: true,
+                        selected: isSelected,
+                        title: Text('$age years old'),
+                        trailing: isSelected
+                            ? const Icon(
+                                Icons.check,
+                                color: AppColors.navyPrimary,
+                                size: 18,
+                              )
+                            : null,
+                        onTap: () => Navigator.of(context).pop(age),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

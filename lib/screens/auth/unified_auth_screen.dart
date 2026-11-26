@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unified_auth_service.dart';
 import '../home_navigation_screen.dart';
 import '../legal/legal_screens.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
+import 'auth_gate.dart';
 import 'auth_screen.dart';
 
 /// Unified Authentication Screen aligned with the single Phone number or Email entry
@@ -44,20 +46,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     super.dispose();
   }
 
-  void _routeToMainFeed() {
-    if (!mounted) return;
-    if (widget.onAuthSuccess != null) {
-      widget.onAuthSuccess!();
-    } else {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const HomeNavigationScreen(initialIndex: 0),
-        ),
-        (route) => false,
-      );
-    }
-  }
-
   Future<void> _handleSubmit() async {
     if (!_showPasswordField) {
       await _handleIdentifierContinue();
@@ -76,6 +64,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       return;
     }
 
+    final hasAuthGate =
+        context.findAncestorWidgetOfExactType<AuthGate>() != null;
+
     setState(() => _isLoading = true);
     try {
       final status = await _authService.checkAccountAndOnboardingStatus(input);
@@ -86,23 +77,49 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       if (!status.hasAccount) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => OnboardingWizardScreen(
+            builder: (routeContext) => OnboardingWizardScreen(
               initialEmail: isEmail ? input : status.email,
               initialPhone: !isEmail ? input : status.phone,
               isNewAccount: true,
-              onCompleted: _routeToMainFeed,
+              onCompleted: () {
+                if (widget.onAuthSuccess != null) {
+                  widget.onAuthSuccess!();
+                } else if (hasAuthGate) {
+                  Navigator.of(routeContext).popUntil((route) => route.isFirst);
+                } else {
+                  Navigator.of(routeContext).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const HomeNavigationScreen(initialIndex: 0),
+                    ),
+                  );
+                }
+              },
             ),
           ),
         );
       } else if (!status.onboardingCompleted) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => OnboardingWizardScreen(
+            builder: (routeContext) => OnboardingWizardScreen(
               initialEmail: status.email ?? (isEmail ? input : null),
               initialPhone: status.phone ?? (!isEmail ? input : null),
               initialStep: status.onboardingStep,
               isNewAccount: false,
-              onCompleted: _routeToMainFeed,
+              onCompleted: () {
+                if (widget.onAuthSuccess != null) {
+                  widget.onAuthSuccess!();
+                } else if (hasAuthGate) {
+                  Navigator.of(routeContext).popUntil((route) => route.isFirst);
+                } else {
+                  Navigator.of(routeContext).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const HomeNavigationScreen(initialIndex: 0),
+                    ),
+                  );
+                }
+              },
             ),
           ),
         );
@@ -129,6 +146,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       return;
     }
 
+    final hasAuthGate =
+        context.findAncestorWidgetOfExactType<AuthGate>() != null;
+    final navigator = Navigator.of(context);
+
     setState(() => _isLoading = true);
     try {
       final res = await _authService.signInWithPassword(
@@ -137,22 +158,41 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       );
       final userId = res.user?.id ?? SupabaseService.currentUserId;
 
-      if (userId != null && mounted) {
+      if (userId != null) {
         final isCompleted = await _authService.checkOnboardingCompleted(userId);
-        if (!mounted) return;
         if (isCompleted) {
-          _routeToMainFeed();
-        } else {
+          ProfileService.markOnboardingCompleted(userId);
+          if (widget.onAuthSuccess != null) {
+            widget.onAuthSuccess!();
+          } else if (!hasAuthGate && mounted) {
+            navigator.pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const HomeNavigationScreen(initialIndex: 0),
+              ),
+            );
+          }
+        } else if (!hasAuthGate && mounted) {
           final isEmail = AuthService.isEmailInput(input);
           final step = await _authService.getUserOnboardingStep(userId);
           if (!mounted) return;
-          Navigator.of(context).pushReplacement(
+          navigator.pushReplacement(
             MaterialPageRoute(
-              builder: (_) => OnboardingWizardScreen(
+              builder: (routeContext) => OnboardingWizardScreen(
                 initialEmail: _resolvedEmail ?? (isEmail ? input : null),
                 initialPhone: !isEmail ? input : null,
                 initialStep: step,
-                onCompleted: _routeToMainFeed,
+                onCompleted: () {
+                  if (widget.onAuthSuccess != null) {
+                    widget.onAuthSuccess!();
+                  } else {
+                    Navigator.of(routeContext).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const HomeNavigationScreen(initialIndex: 0),
+                      ),
+                    );
+                  }
+                },
               ),
             ),
           );
