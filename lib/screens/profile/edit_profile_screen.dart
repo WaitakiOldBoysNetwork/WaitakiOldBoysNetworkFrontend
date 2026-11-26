@@ -228,31 +228,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.crimson.withValues(alpha: 0.1),
+                color: AppColors.danger(ctx).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.delete_forever_rounded,
-                color: AppColors.crimson,
+                color: AppColors.danger(ctx),
                 size: 22,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Delete Account?',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
-                  color: AppColors.navyDark,
+                  color: AppColors.heading(ctx),
                 ),
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'This action is permanent and cannot be undone. All your profile information, Waitaki heritage data, posts, comments, likes, and network connections will be completely erased.',
-          style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary, height: 1.4),
+          style: TextStyle(fontSize: 13.5, color: AppColors.subtext(ctx), height: 1.4),
         ),
         actions: [
           TextButton(
@@ -308,7 +308,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final hasBanner = _bannerUrl != null && _bannerUrl!.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text(
           'Edit Profile',
@@ -347,12 +347,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Profile Banner Section
-                  const Text(
+                  Text(
                     'Profile Banner',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -474,8 +474,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     ElevatedButton.icon(
                                       onPressed: _pickAndUploadBanner,
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: AppColors.navyDark,
+                                        backgroundColor: AppColors.card(context),
+                                        foregroundColor: AppColors.heading(context),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 14,
                                           vertical: 8,
@@ -514,19 +514,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Recommended size: 1200 x 400 px (PNG, JPG, or WebP).',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                    style: TextStyle(fontSize: 11.5, color: AppColors.muted(context)),
                   ),
                   const SizedBox(height: 24),
 
                   // Basic Info
-                  const Text(
+                  Text(
                     'Personal Information',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -567,10 +567,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(height: 12),
                   Material(
-                    color: AppColors.surfaceMuted,
+                    color: AppColors.cardMuted(context),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: AppColors.line(context)),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: SwitchListTile(
@@ -578,19 +578,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         horizontal: 14,
                         vertical: 2,
                       ),
-                      title: const Text(
+                      title: Text(
                         'Share my contact info',
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.navyDark,
+                          color: AppColors.heading(context),
                         ),
                       ),
-                      subtitle: const Text(
+                      subtitle: Text(
                         'Allow other Old Boys to view your email and phone number',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: AppColors.subtext(context),
                         ),
                       ),
                       value: _sharePhoneOnProfile,
@@ -603,12 +603,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 18),
 
                   // School Heritage
-                  const Text(
+                  Text(
                     'Waitaki Heritage',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -664,12 +664,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 18),
 
                   // Location & Career
-                  const Text(
+                  Text(
                     'Location & Profession',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -737,12 +737,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 24),
 
                   // Bio Section
-                  const Text(
+                  Text(
                     'About & Bio',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -763,17 +763,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
 
                   const SizedBox(height: 32),
-                  const Divider(color: AppColors.border),
+                  Divider(color: AppColors.line(context)),
                   const SizedBox(height: 24),
 
                   // Danger Zone: Account Deletion
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: AppColors.crimson.withValues(alpha: 0.04),
+                      color: AppColors.danger(context).withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.crimson.withValues(alpha: 0.25),
+                        color: AppColors.danger(context).withValues(alpha: 0.25),
                         width: 1,
                       ),
                     ),
@@ -781,29 +781,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: const [
+                          children: [
                             Icon(
                               Icons.warning_amber_rounded,
-                              color: AppColors.crimson,
+                              color: AppColors.danger(context),
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               'Danger Zone',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.crimson,
+                                color: AppColors.danger(context),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Permanently delete your Waitaki Old Boys Network account, profile, posts, connections, and personal data. This action cannot be reversed.',
                           style: TextStyle(
                             fontSize: 12.5,
-                            color: AppColors.textSecondary,
+                            color: AppColors.subtext(context),
                             height: 1.4,
                           ),
                         ),
@@ -811,8 +811,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         OutlinedButton.icon(
                           onPressed: _isDeleting ? null : _confirmDeleteAccount,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.crimson,
-                            side: const BorderSide(color: AppColors.crimson),
+                            foregroundColor: AppColors.danger(context),
+                            side: BorderSide(color: AppColors.danger(context)),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 10,
@@ -822,12 +822,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ),
                           icon: _isDeleting
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppColors.crimson,
+                                    color: AppColors.danger(context),
                                   ),
                                 )
                               : const Icon(Icons.delete_forever_rounded, size: 18),

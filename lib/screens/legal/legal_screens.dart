@@ -17,7 +17,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text(
           'Privacy Policy',
@@ -32,7 +32,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             child: Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: AppColors.line(context)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(28),
@@ -40,6 +40,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildLegalHeader(
+                      context,
                       title: 'Privacy Policy',
                       subtitle:
                           'Waitaki Boys\' High School Old Boys\' Association • Effective 2026',
@@ -47,10 +48,12 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     _buildSection(
+                      context,
                       '1. Overview & Commitment to Privacy',
                       'The Waitaki Old Boys Network ("the Network", "we", "our", or "us") is operated for the alumni community of Waitaki Boys\' High School (Oamaru, New Zealand). We are committed to protecting your personal information in accordance with the New Zealand Privacy Act 2020 and applicable data protection laws.',
                     ),
                     _buildSection(
+                      context,
                       '2. Information We Collect',
                       'When you register and participate in the Network, we collect:\n'
                           '• Account & Contact Details: Your full name, email address, phone number, and authentication credentials.\n'
@@ -58,6 +61,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                           '• Community Activity: Posts, comments, likes, mentorship preferences, and connection requests you choose to share within the Network.',
                     ),
                     _buildSection(
+                      context,
                       '3. How We Use Your Information',
                       'Your personal information is used exclusively to:\n'
                           '• Verify your membership as a Waitaki Boys\' High School Old Boy, student, or staff member.\n'
@@ -66,21 +70,25 @@ class PrivacyPolicyScreen extends StatelessWidget {
                           '• Maintain the security and integrity of the platform.',
                     ),
                     _buildSection(
+                      context,
                       '4. Directory Visibility & Information Sharing',
                       '• Member-Only Access: Your profile and directory details are only accessible to registered, authenticated members of the Waitaki Old Boys Network.\n'
                           '• No Sale of Personal Data: We never sell, rent, or trade your personal information to third-party advertisers or external marketing agencies.\n'
                           '• Service Providers: We use trusted infrastructure providers (such as Supabase) strictly to host and secure our database and authentication services.',
                     ),
                     _buildSection(
+                      context,
                       '5. Data Security & Storage',
                       'We implement industry-standard security controls, including encrypted connections (HTTPS/TLS) and Row-Level Security (RLS) policies, to ensure that only you can modify your own profile and account data.',
                     ),
                     _buildSection(
+                      context,
                       '6. Your Rights & Account Deletion',
                       'Under the New Zealand Privacy Act 2020, you have the right to access, update, or correct your personal information at any time via the Edit Profile screen.\n\n'
-                          'You may also permanently delete your account at any time using the "Delete Account" option in your Profile settings, which immediately erases your profile, posts, comments, likes, and connections from the Network.',
+                          'You may also permanently delete your account at any time using the "Delete Account" option in Edit Profile or the Account Menu, which immediately erases your profile, posts, comments, likes, and connections from the Network.',
                     ),
                     _buildSection(
+                      context,
                       '7. Contact Us',
                       'If you have any questions or requests regarding this Privacy Policy or your personal data, please contact the Waitaki Boys\' High School Old Boys\' Association via Waitaki Boys\' High School, Waitaki Avenue, Oamaru, New Zealand.',
                     ),
@@ -110,7 +118,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text(
           'Terms & Conditions',
@@ -125,7 +133,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
             child: Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: AppColors.line(context)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(28),
@@ -133,23 +141,27 @@ class TermsAndConditionsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildLegalHeader(
+                      context,
                       title: 'Terms & Conditions',
                       subtitle:
-                          'Waitaki Boys\' High School Old Boys\' Association • Qaunti Est Sapere',
+                          'Waitaki Boys\' High School Old Boys\' Association • Quanti Est Sapere',
                       icon: Icons.gavel_rounded,
                     ),
                     const SizedBox(height: 24),
                     _buildSection(
+                      context,
                       '1. Acceptance of Terms',
                       'By creating an account, completing onboarding, or using the Waitaki Old Boys Network ("the Network"), you agree to be bound by these Terms & Conditions and our Privacy Policy.',
                     ),
                     _buildSection(
+                      context,
                       '2. Eligibility & Account Accuracy',
                       '• Membership in the Network is intended for past and present students, staff, and approved affiliates of Waitaki Boys\' High School.\n'
                           '• You agree to provide accurate, truthful information regarding your identity, graduation year, and school house during registration and onboarding.\n'
                           '• You are responsible for maintaining the confidentiality of your account password and login credentials.',
                     ),
                     _buildSection(
+                      context,
                       '3. Community Code of Conduct',
                       'As a member of the Waitaki brotherhood, you agree to uphold the values and traditions of Waitaki Boys\' High School:\n'
                           '• Treat fellow Old Boys, staff, and students with respect and courtesy.\n'
@@ -157,20 +169,24 @@ class TermsAndConditionsScreen extends StatelessWidget {
                           '• Do not scrape, harvest, or misuse member contact details from the Old Boys Directory for unsolicited commercial mass-marketing.',
                     ),
                     _buildSection(
+                      context,
                       '4. User-Generated Content',
                       '• You retain ownership of the posts, photos, comments, and profile information you submit to the Network.\n'
                           '• By posting content on the Network, you grant us a non-exclusive license to display and distribute that content to authenticated members of the platform.\n'
                           '• We reserve the right to remove any content or suspend accounts that violate these Terms & Conditions.',
                     ),
                     _buildSection(
+                      context,
                       '5. Mentoring & Professional Networking Disclaimer',
                       'Connections, career opportunities, and mentoring discussions made through the Network are entered into voluntarily between members. The Waitaki Boys\' High School Old Boys\' Association does not guarantee employment outcomes or endorse third-party business ventures posted by members.',
                     ),
                     _buildSection(
+                      context,
                       '6. Termination & Account Removal',
                       'You may terminate your account at any time using the in-app "Delete Account" feature. We reserve the right to suspend or terminate access for any user who breaches these Terms & Conditions or misrepresents their affiliation with Waitaki Boys\' High School.',
                     ),
                     _buildSection(
+                      context,
                       '7. Governing Law',
                       'These Terms & Conditions are governed by and construed in accordance with the laws of New Zealand.',
                     ),
@@ -185,7 +201,8 @@ class TermsAndConditionsScreen extends StatelessWidget {
   }
 }
 
-Widget _buildLegalHeader({
+Widget _buildLegalHeader(
+  BuildContext context, {
   required String title,
   required String subtitle,
   required IconData icon,
@@ -208,19 +225,19 @@ Widget _buildLegalHeader({
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.navyDark,
+                color: AppColors.heading(context),
                 letterSpacing: -0.4,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
-                color: AppColors.textSecondary,
+                color: AppColors.subtext(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -231,7 +248,7 @@ Widget _buildLegalHeader({
   );
 }
 
-Widget _buildSection(String heading, String body) {
+Widget _buildSection(BuildContext context, String heading, String body) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 20),
     child: Column(
@@ -239,18 +256,18 @@ Widget _buildSection(String heading, String body) {
       children: [
         Text(
           heading,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: AppColors.navyDark,
+            color: AppColors.heading(context),
           ),
         ),
         const SizedBox(height: 6),
         Text(
           body,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13.5,
-            color: AppColors.textSecondary,
+            color: AppColors.subtext(context),
             height: 1.5,
           ),
         ),
@@ -282,9 +299,9 @@ class LegalLinksFooter extends StatelessWidget {
           Text(
             'By using the Waitaki Old Boys Network, you agree to our:',
             textAlign: textAlign,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11.5,
-              color: AppColors.textMuted,
+              color: AppColors.muted(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -299,34 +316,34 @@ class LegalLinksFooter extends StatelessWidget {
             InkWell(
               onTap: () => TermsAndConditionsScreen.show(context),
               borderRadius: BorderRadius.circular(4),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                 child: Text(
                   'Terms & Conditions',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.navyPrimary,
+                    color: AppColors.brandLink(context),
                     decoration: TextDecoration.underline,
                   ),
                 ),
               ),
             ),
-            const Text(
+            Text(
               '•',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 12, color: AppColors.muted(context)),
             ),
             InkWell(
               onTap: () => PrivacyPolicyScreen.show(context),
               borderRadius: BorderRadius.circular(4),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                 child: Text(
                   'Privacy Policy',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.navyPrimary,
+                    color: AppColors.brandLink(context),
                     decoration: TextDecoration.underline,
                   ),
                 ),

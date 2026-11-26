@@ -173,7 +173,7 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 1000;
@@ -184,13 +184,13 @@ class _FeedScreenState extends State<FeedScreen> {
               constraints: const BoxConstraints(maxWidth: 1240),
               child: RefreshIndicator(
                 onRefresh: _loadData,
-                color: AppColors.navyPrimary,
+                color: AppColors.brand(context),
                 child: _isLoading
-                    ? const Center(
+                    ? Center(
                         child: Padding(
-                          padding: EdgeInsets.all(40),
+                          padding: const EdgeInsets.all(40),
                           child: CircularProgressIndicator(
-                              color: AppColors.navyPrimary),
+                              color: AppColors.brand(context)),
                         ),
                       )
                     : _errorMessage != null
@@ -306,11 +306,13 @@ class _FeedScreenState extends State<FeedScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
+                        border:
+                            Border.all(color: AppColors.card(context), width: 3),
                       ),
                       child: CircleAvatar(
                         radius: 34,
-                        backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.1),
+                        backgroundColor:
+                            AppColors.brand(context).withValues(alpha: 0.12),
                         backgroundImage: (profile?.avatarUrl != null &&
                                 profile!.avatarUrl!.isNotEmpty)
                             ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -319,10 +321,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                 profile!.avatarUrl!.isEmpty)
                             ? Text(
                                 profile?.initials ?? 'OB',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.navyPrimary,
+                                  color: AppColors.brand(context),
                                 ),
                               )
                             : null,
@@ -333,10 +335,10 @@ class _FeedScreenState extends State<FeedScreen> {
                   Text(
                     profile?.fullName ?? 'Waitakian Old Boy',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                   ),
                   if (profile?.gradYear != null) ...[
@@ -352,10 +354,12 @@ class _FeedScreenState extends State<FeedScreen> {
                       ),
                       child: Text(
                         'Class of ${profile!.gradYear}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.goldDark,
+                          color: AppColors.isDark(context)
+                              ? AppColors.goldAccent
+                              : AppColors.goldDark,
                         ),
                       ),
                     ),
@@ -366,9 +370,9 @@ class _FeedScreenState extends State<FeedScreen> {
                     Text(
                       profile.headline!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: AppColors.subtext(context),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -436,20 +440,20 @@ class _FeedScreenState extends State<FeedScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: const [
+              children: [
                 Icon(
                   Icons.account_balance_rounded,
-                  color: AppColors.navyPrimary,
+                  color: AppColors.brand(context),
                   size: 18,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Waitaki Heritage',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -458,11 +462,11 @@ class _FeedScreenState extends State<FeedScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Qaunti Est Sapere • Est. 1883\nOamaru, North Otago',
+            Text(
+              'Quanti Est Sapere • Est. 1883\nOamaru, North Otago',
               style: TextStyle(
                 fontSize: 11.5,
-                color: AppColors.textSecondary,
+                color: AppColors.subtext(context),
                 height: 1.4,
               ),
             ),
@@ -499,22 +503,22 @@ class _FeedScreenState extends State<FeedScreen> {
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.navyPrimary),
+            Icon(icon, size: 16, color: AppColors.brand(context)),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: AppColors.body(context),
                 ),
               ),
             ),
             Icon(
               isExternal ? Icons.open_in_new : Icons.chevron_right,
               size: isExternal ? 13 : 16,
-              color: AppColors.textMuted,
+              color: AppColors.muted(context),
             ),
           ],
         ),
@@ -535,7 +539,8 @@ class _FeedScreenState extends State<FeedScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.1),
+                  backgroundColor:
+                      AppColors.brand(context).withValues(alpha: 0.12),
                   backgroundImage: (profile?.avatarUrl != null &&
                           profile!.avatarUrl!.isNotEmpty)
                       ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -544,10 +549,10 @@ class _FeedScreenState extends State<FeedScreen> {
                           profile!.avatarUrl!.isEmpty)
                       ? Text(
                           profile?.initials ?? 'OB',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.navyPrimary,
+                            color: AppColors.brand(context),
                           ),
                         )
                       : null,
@@ -563,15 +568,15 @@ class _FeedScreenState extends State<FeedScreen> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceMuted,
+                        color: AppColors.cardMuted(context),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: AppColors.line(context)),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Share an update, news, or milestone with fellow Old Boys...',
                         style: TextStyle(
                           fontSize: 13.5,
-                          color: AppColors.textMuted,
+                          color: AppColors.muted(context),
                         ),
                       ),
                     ),
@@ -589,10 +594,10 @@ class _FeedScreenState extends State<FeedScreen> {
                 children: [
                   TextButton.icon(
                     onPressed: _openCreatePost,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.image_outlined,
                       size: 19,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brand(context),
                     ),
                     label: const Text(
                       'Photo',
@@ -601,10 +606,12 @@ class _FeedScreenState extends State<FeedScreen> {
                   ),
                   TextButton.icon(
                     onPressed: _openCreatePost,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.event_note_outlined,
                       size: 19,
-                      color: AppColors.goldDark,
+                      color: AppColors.isDark(context)
+                          ? AppColors.goldAccent
+                          : AppColors.goldDark,
                     ),
                     label: const Text(
                       'Reunion / Event',
@@ -613,10 +620,10 @@ class _FeedScreenState extends State<FeedScreen> {
                   ),
                   TextButton.icon(
                     onPressed: _openCreatePost,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.article_outlined,
                       size: 19,
-                      color: AppColors.crimson,
+                      color: AppColors.danger(context),
                     ),
                     label: const Text(
                       'Achievement',
@@ -643,13 +650,13 @@ class _FeedScreenState extends State<FeedScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Old Boys to Connect With',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -657,12 +664,12 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
                 InkWell(
                   onTap: widget.onNavigateToDirectory,
-                  child: const Text(
+                  child: Text(
                     'View all',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brand(context),
                     ),
                   ),
                 ),
@@ -670,11 +677,11 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
             const SizedBox(height: 14),
             if (_suggestedOldBoys.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'All caught up with suggestions!',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style: TextStyle(fontSize: 12, color: AppColors.muted(context)),
                 ),
               )
             else
@@ -710,7 +717,8 @@ class _FeedScreenState extends State<FeedScreen> {
             },
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.08),
+              backgroundColor:
+                  AppColors.brand(context).withValues(alpha: 0.12),
               backgroundImage: (profile.avatarUrl != null &&
                       profile.avatarUrl!.isNotEmpty)
                   ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -718,10 +726,10 @@ class _FeedScreenState extends State<FeedScreen> {
               child: (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
                   ? Text(
                       profile.initials,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.navyPrimary,
+                        color: AppColors.brand(context),
                       ),
                     )
                   : null,
@@ -746,10 +754,10 @@ class _FeedScreenState extends State<FeedScreen> {
                   },
                   child: Text(
                     profile.fullName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -758,18 +766,20 @@ class _FeedScreenState extends State<FeedScreen> {
                 if (profile.gradYear != null)
                   Text(
                     'Class of ${profile.gradYear}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.goldDark,
+                      color: AppColors.isDark(context)
+                          ? AppColors.goldAccent
+                          : AppColors.goldDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 if (profile.headline != null && profile.headline!.isNotEmpty)
                   Text(
                     profile.headline!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.textSecondary,
+                      color: AppColors.subtext(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -814,19 +824,19 @@ class _FeedScreenState extends State<FeedScreen> {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.campaign_rounded,
-                  color: AppColors.crimson,
+                  color: AppColors.danger(context),
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'WBHS Noticeboard',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -841,20 +851,20 @@ class _FeedScreenState extends State<FeedScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Text(
                             'hail.to',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.navyPrimary,
+                              color: AppColors.brand(context),
                             ),
                           ),
-                          SizedBox(width: 3),
+                          const SizedBox(width: 3),
                           Icon(
                             Icons.open_in_new,
                             size: 11,
-                            color: AppColors.navyPrimary,
+                            color: AppColors.brand(context),
                           ),
                         ],
                       ),
@@ -881,21 +891,21 @@ class _FeedScreenState extends State<FeedScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.navyPrimary.withValues(alpha: 0.05),
+                  color: AppColors.brand(context).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: AppColors.navyPrimary.withValues(alpha: 0.12),
+                    color: AppColors.brand(context).withValues(alpha: 0.18),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(
                       Icons.newspaper_rounded,
                       size: 14,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brand(context),
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Flexible(
                       child: Text(
                         'Browse all articles on Hail.to',
@@ -903,15 +913,15 @@ class _FeedScreenState extends State<FeedScreen> {
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.navyPrimary,
+                          color: AppColors.brand(context),
                         ),
                       ),
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Icon(
                       Icons.open_in_new,
                       size: 11,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brand(context),
                     ),
                   ],
                 ),
@@ -942,24 +952,24 @@ class _FeedScreenState extends State<FeedScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.navyPrimary.withValues(alpha: 0.08),
+                    color: AppColors.brand(context).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     badge,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brand(context),
                     ),
                   ),
                 ),
                 if (url != null) ...[
                   const Spacer(),
-                  const Icon(
+                  Icon(
                     Icons.open_in_new,
                     size: 12,
-                    color: AppColors.textSecondary,
+                    color: AppColors.subtext(context),
                   ),
                 ],
               ],
@@ -967,18 +977,18 @@ class _FeedScreenState extends State<FeedScreen> {
             const SizedBox(height: 4),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: AppColors.navyDark,
+                color: AppColors.heading(context),
               ),
             ),
             const SizedBox(height: 2),
             Text(
               snippet,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
-                color: AppColors.textSecondary,
+                color: AppColors.subtext(context),
                 height: 1.35,
               ),
             ),
@@ -994,27 +1004,27 @@ class _FeedScreenState extends State<FeedScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
-            'Qaunti Est Sapere',
+            'Quanti Est Sapere',
             style: TextStyle(
               fontSize: 12,
               fontStyle: FontStyle.italic,
-              color: AppColors.navyMuted,
+              color: AppColors.muted(context),
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: 6),
-          LegalLinksFooter(
+          const SizedBox(height: 6),
+          const LegalLinksFooter(
             textAlign: TextAlign.start,
             showPrefixText: false,
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Text(
             '© 2026 Waitaki Boys\' High School Old Boys\' Association. All rights reserved.',
             style: TextStyle(
               fontSize: 11,
-              color: AppColors.textMuted,
+              color: AppColors.muted(context),
             ),
           ),
         ],
@@ -1029,27 +1039,27 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Center(
           child: Column(
             children: [
-              const Icon(
+              Icon(
                 Icons.mark_chat_unread_outlined,
                 size: 54,
-                color: AppColors.textMuted,
+                color: AppColors.muted(context),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'No Posts on the Network Yet',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.navyDark,
+                  color: AppColors.heading(context),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Be the first to share a post, school memory, or reunion update with fellow Old Boys!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: AppColors.subtext(context),
                 ),
               ),
               const SizedBox(height: 20),
@@ -1072,7 +1082,8 @@ class _FeedScreenState extends State<FeedScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.crimson),
+            Icon(Icons.error_outline,
+                size: 48, color: AppColors.danger(context)),
             const SizedBox(height: 16),
             const Text(
               'Error Loading Feed',
@@ -1082,7 +1093,7 @@ class _FeedScreenState extends State<FeedScreen> {
             Text(
               _errorMessage!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.subtext(context)),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

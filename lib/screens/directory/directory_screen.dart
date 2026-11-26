@@ -154,7 +154,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text(
           'Old Boys Directory',
@@ -169,7 +169,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
               // Search & Filter Box
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                color: AppColors.surface,
+                color: AppColors.card(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -221,27 +221,29 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.crimson.withValues(alpha: 0.08),
+                                  color: AppColors.danger(context)
+                                      .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: AppColors.crimson.withValues(alpha: 0.4),
+                                    color: AppColors.danger(context)
+                                        .withValues(alpha: 0.4),
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.filter_alt_off_outlined,
                                       size: 15,
-                                      color: AppColors.crimson,
+                                      color: AppColors.danger(context),
                                     ),
-                                    SizedBox(width: 5),
+                                    const SizedBox(width: 5),
                                     Text(
                                       'Clear Filters',
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.crimson,
+                                        color: AppColors.danger(context),
                                       ),
                                     ),
                                   ],
@@ -261,7 +263,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _loadDirectory,
-                  color: AppColors.navyPrimary,
+                  color: AppColors.brand(context),
                   child: _buildResultsView(),
                 ),
               ),
@@ -274,8 +276,8 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
 
   Widget _buildResultsView() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.navyPrimary),
+      return Center(
+        child: CircularProgressIndicator(color: AppColors.brand(context)),
       );
     }
 
@@ -286,10 +288,10 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 40,
-                color: AppColors.crimson,
+                color: AppColors.danger(context),
               ),
               const SizedBox(height: 12),
               Text('Error: $_errorMessage'),
@@ -311,10 +313,10 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.people_outline,
                 size: 48,
-                color: AppColors.textMuted,
+                color: AppColors.muted(context),
               ),
               const SizedBox(height: 14),
               Text(
@@ -322,8 +324,8 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                     ? 'No Old Boys found matching your search and filter criteria.'
                     : 'No registered Old Boys yet.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColors.subtext(context),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -337,11 +339,11 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                 ),
               ] else ...[
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'As Old Boys join the network, they will appear here.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textMuted,
+                    color: AppColors.muted(context),
                     fontSize: 13,
                   ),
                 ),
@@ -511,11 +513,11 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: isActive
-            ? AppColors.navyPrimary.withValues(alpha: 0.1)
-            : AppColors.surface,
+            ? AppColors.brand(context).withValues(alpha: 0.12)
+            : AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isActive ? AppColors.navyPrimary : AppColors.border,
+          color: isActive ? AppColors.brand(context) : AppColors.line(context),
           width: isActive ? 1.5 : 1.0,
         ),
       ),
@@ -525,7 +527,8 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
           Icon(
             icon,
             size: 15,
-            color: isActive ? AppColors.navyPrimary : AppColors.textSecondary,
+            color:
+                isActive ? AppColors.brand(context) : AppColors.subtext(context),
           ),
           const SizedBox(width: 6),
           Text(
@@ -533,14 +536,14 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              color: isActive ? AppColors.navyPrimary : AppColors.textPrimary,
+              color: isActive ? AppColors.brand(context) : AppColors.body(context),
             ),
           ),
           const SizedBox(width: 4),
           Icon(
             Icons.arrow_drop_down,
             size: 18,
-            color: isActive ? AppColors.navyPrimary : AppColors.textMuted,
+            color: isActive ? AppColors.brand(context) : AppColors.muted(context),
           ),
         ],
       ),

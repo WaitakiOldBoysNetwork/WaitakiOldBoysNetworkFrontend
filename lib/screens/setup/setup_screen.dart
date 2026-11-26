@@ -103,7 +103,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
@@ -113,7 +113,7 @@ class _SetupScreenState extends State<SetupScreen> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: AppColors.line(context)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(28),
@@ -126,45 +126,46 @@ class _SetupScreenState extends State<SetupScreen> {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: AppColors.navyPrimary.withValues(alpha: 0.08),
+                        color: AppColors.brand(context).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.cloud_done_outlined,
-                          color: AppColors.navyPrimary,
+                          color: AppColors.brand(context),
                           size: 32,
                         ),
                       ),
                     ),
                     const SizedBox(height: 18),
-                    const Text(
+                    Text(
                       'Server Connection Setup',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.navyDark,
+                        color: AppColors.heading(context),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Enter your server address and access key to connect to the Waitaki Old Boys Network.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: AppColors.subtext(context),
                         height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 24),
 
                     // Server Address Input
-                    const Text(
+                    Text(
                       'Server Address (URL)',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
+                        color: AppColors.body(context),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -179,11 +180,12 @@ class _SetupScreenState extends State<SetupScreen> {
                     const SizedBox(height: 18),
 
                     // Access Key Input with Show/Hide toggle
-                    const Text(
+                    Text(
                       'Access Key',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
+                        color: AppColors.body(context),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -202,7 +204,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                 ? Icons.visibility_off
                                 : Icons.visibility,
                             size: 20,
-                            color: AppColors.textMuted,
+                            color: AppColors.muted(context),
                           ),
                           onPressed: () => setState(
                             () => _obscureKey = !_obscureKey,
@@ -243,12 +245,12 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    const Text(
+                    Text(
                       'Need help connecting? Please contact your Waitaki Old Boys Network administrator.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                        color: AppColors.muted(context),
                         height: 1.35,
                       ),
                     ),

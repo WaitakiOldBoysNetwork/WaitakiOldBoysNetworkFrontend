@@ -5,6 +5,7 @@ import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/theme_service.dart';
 import '../home_navigation_screen.dart';
 import '../legal/legal_screens.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
@@ -313,288 +314,311 @@ class _AuthScreenState extends State<AuthScreen> {
         enteredText.isNotEmpty && !AuthService.isEmailInput(enteredText);
     final hasResolvedEmail =
         _resolvedEmail != null && _resolvedEmail!.contains('@');
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header & WBHS Crest Representation
-                      Center(
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          height: 72,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Waitaki Old Boys',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.navyDark,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Old Boys Network • Quanti Est Sapere',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.crimson,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Single Phone Number or Email Input (when not yet verified)
-                      if (!_showPasswordField) ...[
-                        const Text(
-                          'Sign in or create a new account using your phone number or email address.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            color: AppColors.textSecondary,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        TextFormField(
-                          controller: _identifierController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _handleSubmit(),
-                          decoration: const InputDecoration(
-                            labelText: 'Phone Number or Email',
-                            hintText:
-                                'e.g. 021 123 4567 or oldboy@waitakibhs.school.nz',
-                            prefixIcon: Icon(
-                              Icons.contact_mail_outlined,
-                              size: 20,
+      backgroundColor: AppColors.bg(context),
+      body: Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(color: AppColors.line(context)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Header & WBHS Crest Representation
+                          Center(
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              height: 72,
+                              fit: BoxFit.contain,
                             ),
                           ),
-                          validator: (v) {
-                            if (v == null ||
-                                !AuthService.isValidEmailOrPhone(v)) {
-                              return 'Enter a valid phone number or email';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                      ],
+                          const SizedBox(height: 16),
+                          Text(
+                            'Waitaki Old Boys',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.heading(context),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Old Boys Network • Quanti Est Sapere',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.danger(context),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
 
-                      // Confirmed Phone/Email + Change link & Password Field
-                      if (_showPasswordField) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceMuted,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF16A34A),
-                                size: 18,
+                          // Single Phone Number or Email Input (when not yet verified)
+                          if (!_showPasswordField) ...[
+                            Text(
+                              'Sign in or create a new account using your phone number or email address.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: AppColors.subtext(context),
+                                height: 1.35,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        enteredText,
-                                        maxLines: 1,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                          color: AppColors.navyDark,
-                                        ),
-                                      ),
-                                    ),
-                                    if (isPhoneEntered && hasResolvedEmail) ...[
-                                      const SizedBox(height: 2),
-                                      FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          'Account email: $_resolvedEmail',
-                                          maxLines: 1,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(height: 18),
+                            TextFormField(
+                              controller: _identifierController,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _handleSubmit(),
+                              decoration: const InputDecoration(
+                                labelText: 'Phone Number or Email',
+                                hintText:
+                                    'e.g. 021 123 4567 or oldboy@waitakibhs.school.nz',
+                                prefixIcon: Icon(
+                                  Icons.contact_mail_outlined,
+                                  size: 20,
+                                ),
+                              ),
+                              validator: (v) {
+                                if (v == null ||
+                                    !AuthService.isValidEmailOrPhone(v)) {
+                                  return 'Enter a valid phone number or email';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Confirmed Phone/Email + Change link & Password Field
+                          if (_showPasswordField) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardMuted(context),
+                                borderRadius: BorderRadius.circular(10),
+                                border:
+                                    Border.all(color: AppColors.line(context)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFF16A34A),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            enteredText,
+                                            maxLines: 1,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              color: AppColors.heading(context),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ],
+                                        if (isPhoneEntered &&
+                                            hasResolvedEmail) ...[
+                                          const SizedBox(height: 2),
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              'Account email: $_resolvedEmail',
+                                              maxLines: 1,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color:
+                                                    AppColors.subtext(context),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _showPasswordField = false;
+                                        _resolvedEmail = null;
+                                        _passwordController.clear();
+                                      });
+                                    },
+                                    child: const Text(
+                                      'Change',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _handleSubmit(),
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                prefixIcon:
+                                    const Icon(Icons.lock_outline, size: 20),
+                                suffixIcon: IconButton(
+                                  tooltip: _obscurePassword
+                                      ? 'Show password'
+                                      : 'Hide password',
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    size: 20,
+                                    color: AppColors.muted(context),
+                                  ),
+                                  onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
                                 ),
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _showPasswordField = false;
-                                    _resolvedEmail = null;
-                                    _passwordController.clear();
-                                  });
-                                },
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Password is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed:
+                                    _isLoading ? null : _handleForgotPassword,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                ),
                                 child: const Text(
-                                  'Change',
-                                  style: TextStyle(fontSize: 12),
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _handleSubmit(),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon:
-                                const Icon(Icons.lock_outline, size: 20),
-                            suffixIcon: IconButton(
-                              tooltip: _obscurePassword
-                                  ? 'Show password'
-                                  : 'Hide password',
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                size: 20,
-                                color: AppColors.textMuted,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
                             ),
-                          ),
-                          validator: (v) {
-                            if (v == null || v.isEmpty) {
-                              return 'Password is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed:
-                                _isLoading ? null : _handleForgotPassword,
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                            ),
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
+                            const SizedBox(height: 12),
+                          ],
 
-                      // Primary Continue / Log In Button
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _handleSubmit,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                !_showPasswordField ? 'Continue' : 'Log In',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          // Primary Continue / Log In Button
+                          ElevatedButton(
+                            onPressed: _isLoading ? null : _handleSubmit,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    !_showPasswordField ? 'Continue' : 'Log In',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Magic Link Option when an email is available
+                          if (_showPasswordField && hasResolvedEmail) ...[
+                            OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _handleMagicLink,
+                              icon: const Icon(Icons.send_rounded, size: 16),
+                              label: Text(
+                                isPhoneEntered
+                                    ? 'Email Magic Link ($_resolvedEmail)'
+                                    : 'Send Me a Magic Link',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // Info text
+                          Text(
+                            !_showPasswordField
+                                ? 'New here? Enter your phone number or email above and tap Continue to set up your profile.'
+                                : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted(context),
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          const LegalLinksFooter(),
+                        ],
                       ),
-                      const SizedBox(height: 14),
-
-                      // Magic Link Option when an email is available
-                      if (_showPasswordField && hasResolvedEmail) ...[
-                        OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _handleMagicLink,
-                          icon: const Icon(Icons.send_rounded, size: 16),
-                          label: Text(
-                            isPhoneEntered
-                                ? 'Email Magic Link ($_resolvedEmail)'
-                                : 'Send Me a Magic Link',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // Info text
-                      Text(
-                        !_showPasswordField
-                            ? 'New here? Enter your phone number or email above and tap Continue to set up your profile.'
-                            : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                          height: 1.35,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(height: 1),
-                      const SizedBox(height: 12),
-                      const LegalLinksFooter(),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: SafeArea(
+              child: IconButton.outlined(
+                tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                onPressed: () => ThemeService().toggleTheme(),
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -612,18 +636,19 @@ class EmailConfirmationDialog extends StatelessWidget {
     this.onDismiss,
   });
 
-  Widget _buildStepRow({required IconData icon, required String text}) {
+  Widget _buildStepRow(
+      BuildContext context, {required IconData icon, required String text}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.navyPrimary),
+        Icon(icon, size: 18, color: AppColors.brandLink(context)),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: AppColors.subtext(context),
               height: 1.35,
             ),
           ),
@@ -640,7 +665,7 @@ class EmailConfirmationDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       elevation: 16,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.card(context),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
@@ -679,12 +704,12 @@ class EmailConfirmationDialog extends StatelessWidget {
               const SizedBox(height: 18),
 
               // Title
-              const Text(
+              Text(
                 'Check Your Inbox',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.navyDark,
+                  color: AppColors.heading(context),
                   letterSpacing: -0.4,
                 ),
                 textAlign: TextAlign.center,
@@ -692,12 +717,12 @@ class EmailConfirmationDialog extends StatelessWidget {
               const SizedBox(height: 10),
 
               // Subtitle
-              const Text(
+              Text(
                 'A verification email has been dispatched to activate your Waitaki Old Boys Network account.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.5,
-                  color: AppColors.textSecondary,
+                  color: AppColors.subtext(context),
                   height: 1.45,
                 ),
               ),
@@ -709,19 +734,19 @@ class EmailConfirmationDialog extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.navyPrimary.withValues(alpha: 0.05),
+                  color: AppColors.brand(context).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.navyPrimary.withValues(alpha: 0.15),
+                    color: AppColors.brand(context).withValues(alpha: 0.22),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.mail_rounded,
                       size: 18,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brandLink(context),
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -730,10 +755,10 @@ class EmailConfirmationDialog extends StatelessWidget {
                         child: Text(
                           email,
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.navyPrimary,
+                            color: AppColors.brandLink(context),
                           ),
                         ),
                       ),
@@ -748,29 +773,32 @@ class EmailConfirmationDialog extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
+                  color: AppColors.cardMuted(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.line(context)),
                 ),
                 child: Column(
                   children: [
                     _buildStepRow(
+                      context,
                       icon: Icons.filter_1_rounded,
                       text: 'Open the confirmation email in your inbox.',
                     ),
                     const SizedBox(height: 8),
                     _buildStepRow(
+                      context,
                       icon: Icons.filter_2_rounded,
                       text:
                           'Click the verification link to activate your account.',
                     ),
                     const SizedBox(height: 8),
                     _buildStepRow(
+                      context,
                       icon: Icons.filter_3_rounded,
                       text:
                           'Return to this app and sign in with your password.',
                     ),
-                    const Divider(height: 18, color: AppColors.border),
+                    Divider(height: 18, color: AppColors.line(context)),
                     Row(
                       children: [
                         const Icon(
@@ -784,8 +812,7 @@ class EmailConfirmationDialog extends StatelessWidget {
                             'Don’t see it? Please check your Spam or Junk folder.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary
-                                  .withValues(alpha: 0.9),
+                              color: AppColors.subtext(context),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -882,7 +909,7 @@ class _MagicLinkConfirmationDialogState
         borderRadius: BorderRadius.circular(20),
       ),
       elevation: 16,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.card(context),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
@@ -917,23 +944,23 @@ class _MagicLinkConfirmationDialogState
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Magic Link Sent',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.navyDark,
+                  color: AppColors.heading(context),
                   letterSpacing: -0.4,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'We emailed you a password-free sign-in link. Click it in your email to immediately access your account.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.5,
-                  color: AppColors.textSecondary,
+                  color: AppColors.subtext(context),
                   height: 1.45,
                 ),
               ),
@@ -943,19 +970,19 @@ class _MagicLinkConfirmationDialogState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.navyPrimary.withValues(alpha: 0.05),
+                  color: AppColors.brand(context).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.navyPrimary.withValues(alpha: 0.15),
+                    color: AppColors.brand(context).withValues(alpha: 0.22),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.mail_rounded,
                       size: 18,
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brandLink(context),
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -964,10 +991,10 @@ class _MagicLinkConfirmationDialogState
                         child: Text(
                           widget.email,
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.navyPrimary,
+                            color: AppColors.brandLink(context),
                           ),
                         ),
                       ),
@@ -980,9 +1007,9 @@ class _MagicLinkConfirmationDialogState
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
+                  color: AppColors.cardMuted(context),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.line(context)),
                 ),
                 child: Row(
                   children: [
@@ -1001,7 +1028,7 @@ class _MagicLinkConfirmationDialogState
                           fontSize: 12,
                           color: _resentSuccess
                               ? AppColors.success
-                              : AppColors.textSecondary.withValues(alpha: 0.9),
+                              : AppColors.subtext(context),
                           fontWeight: _resentSuccess
                               ? FontWeight.w600
                               : FontWeight.normal,

@@ -5,6 +5,7 @@ import '../../core/utils/snackbar_helper.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/theme_service.dart';
 import '../../services/unified_auth_service.dart';
 import '../home_navigation_screen.dart';
 import '../legal/legal_screens.dart';
@@ -287,20 +288,23 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       listenable: _unifiedAuthService,
       builder: (context, _) {
         final busy = _isLoading || _unifiedAuthService.state.isLoading;
+        final isDark = AppColors.isDark(context);
 
         return Scaffold(
-          backgroundColor: AppColors.background,
-          body: Center(
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
+          backgroundColor: AppColors.bg(context),
+          body: Stack(
+            children: [
+              Center(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(color: AppColors.line(context)),
+                      ),
                   child: Padding(
                     padding: const EdgeInsets.all(28),
                     child: Form(
@@ -332,36 +336,36 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          const Text(
+                          Text(
                             'Waitaki Old Boys',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.navyDark,
+                              color: AppColors.heading(context),
                               letterSpacing: -0.5,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Old Boys Network • Quanti Est Sapere',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.crimson,
+                              color: AppColors.danger(context),
                               letterSpacing: 0.3,
                             ),
                           ),
                           const SizedBox(height: 20),
 
                           if (!_showPasswordField) ...[
-                            const Text(
+                            Text(
                               'Sign in or create a new account using your phone number or email address.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13.5,
-                                color: AppColors.textSecondary,
+                                color: AppColors.subtext(context),
                                 height: 1.35,
                               ),
                             ),
@@ -398,9 +402,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceMuted,
+                                color: AppColors.cardMuted(context),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: AppColors.line(context)),
                               ),
                               child: Row(
                                 children: [
@@ -422,10 +426,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                           child: Text(
                                             enteredText,
                                             maxLines: 1,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 14,
-                                              color: AppColors.navyDark,
+                                              color: AppColors.heading(context),
                                             ),
                                           ),
                                         ),
@@ -438,9 +442,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                             child: Text(
                                               'Account email: $_resolvedEmail',
                                               maxLines: 1,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
-                                                color: AppColors.textSecondary,
+                                                color: AppColors.subtext(context),
                                               ),
                                             ),
                                           ),
@@ -483,7 +487,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                         ? Icons.visibility_off
                                         : Icons.visibility,
                                     size: 20,
-                                    color: AppColors.textMuted,
+                                    color: AppColors.muted(context),
                                   ),
                                   onPressed: () => setState(
                                     () => _obscurePassword = !_obscurePassword,
@@ -570,9 +574,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                 ? 'New here? Enter your phone number or email above and tap Continue to set up your profile.'
                                 : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textMuted,
+                              color: AppColors.muted(context),
                               height: 1.35,
                             ),
                           ),
@@ -587,6 +591,27 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                 ),
               ),
             ),
+            ),
+              Positioned(
+                top: 12,
+                right: 16,
+                child: SafeArea(
+                  child: IconButton.outlined(
+                    tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+                    onPressed: () => ThemeService().toggleTheme(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.card(context),
+                      side: BorderSide(color: AppColors.line(context)),
+                    ),
+                    icon: Icon(
+                      isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                      size: 20,
+                      color: AppColors.heading(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },

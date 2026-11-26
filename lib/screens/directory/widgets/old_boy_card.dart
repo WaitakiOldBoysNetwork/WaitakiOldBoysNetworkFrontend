@@ -38,7 +38,8 @@ class OldBoyCard extends StatelessWidget {
               // Avatar
               CircleAvatar(
                 radius: 26,
-                backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.08),
+                backgroundColor:
+                    AppColors.brand(context).withValues(alpha: 0.12),
                 backgroundImage:
                     (profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty)
                     ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -46,10 +47,10 @@ class OldBoyCard extends StatelessWidget {
                 child: (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
                     ? Text(
                         profile.initials,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.navyPrimary,
+                          color: AppColors.brand(context),
                         ),
                       )
                     : null,
@@ -66,10 +67,10 @@ class OldBoyCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             profile.fullName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15.5,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.navyDark,
+                              color: AppColors.heading(context),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -82,17 +83,17 @@ class OldBoyCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.navyPrimary.withValues(
-                                alpha: 0.08,
+                              color: AppColors.brand(context).withValues(
+                                alpha: 0.12,
                               ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               DateFormatter.shortGradYear(profile.gradYear),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.navyPrimary,
+                                color: AppColors.brand(context),
                               ),
                             ),
                           ),
@@ -104,9 +105,9 @@ class OldBoyCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         profile.headline!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: AppColors.subtext(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -116,9 +117,9 @@ class OldBoyCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         profile.bio!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: AppColors.subtext(context),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -129,17 +130,17 @@ class OldBoyCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on_outlined,
                             size: 13,
-                            color: AppColors.textMuted,
+                            color: AppColors.muted(context),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             profile.city!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textMuted,
+                              color: AppColors.muted(context),
                             ),
                           ),
                         ],
@@ -152,7 +153,7 @@ class OldBoyCard extends StatelessWidget {
               const SizedBox(width: 8),
 
               // Action button
-              _buildActionButton(),
+              _buildActionButton(context),
             ],
           ),
         ),
@@ -160,20 +161,20 @@ class OldBoyCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton() {
+  Widget _buildActionButton(BuildContext context) {
     if (isSelf) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
+          color: AppColors.cardMuted(context),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Text(
+        child: Text(
           'You',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textMuted,
+            color: AppColors.muted(context),
           ),
         ),
       );

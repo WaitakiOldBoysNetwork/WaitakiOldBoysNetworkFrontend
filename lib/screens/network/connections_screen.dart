@@ -92,7 +92,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         title: const Text(
           'My Network',
@@ -100,9 +100,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.navyPrimary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.navyPrimary,
+          labelColor: AppColors.brand(context),
+          unselectedLabelColor: AppColors.subtext(context),
+          indicatorColor: AppColors.brand(context),
           indicatorWeight: 3,
           tabs: [
             Tab(
@@ -142,9 +142,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
           child: _isLoading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.navyPrimary,
+                    color: AppColors.brand(context),
                   ),
                 )
               : TabBarView(
@@ -161,14 +161,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.inbox_outlined, size: 48, color: AppColors.textMuted),
-            SizedBox(height: 12),
+          children: [
+            Icon(Icons.inbox_outlined,
+                size: 48, color: AppColors.muted(context)),
+            const SizedBox(height: 12),
             Text(
               'No pending connection requests',
               style: TextStyle(
                 fontSize: 15,
-                color: AppColors.textSecondary,
+                color: AppColors.subtext(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -179,7 +180,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
     return RefreshIndicator(
       onRefresh: _loadData,
-      color: AppColors.navyPrimary,
+      color: AppColors.brand(context),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _pendingRequests.length,
@@ -196,8 +197,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppColors.navyPrimary.withValues(
-                      alpha: 0.08,
+                    backgroundColor: AppColors.brand(context).withValues(
+                      alpha: 0.12,
                     ),
                     backgroundImage:
                         (requester?.avatarUrl != null &&
@@ -209,10 +210,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             requester!.avatarUrl!.isEmpty)
                         ? Text(
                             requester?.initials ?? 'OB',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.navyPrimary,
+                              color: AppColors.brand(context),
                             ),
                           )
                         : null,
@@ -224,19 +225,21 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                       children: [
                         Text(
                           requester?.fullName ?? 'Old Boy Member',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.navyDark,
+                            color: AppColors.heading(context),
                           ),
                         ),
                         if (requester?.gradYear != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             DateFormatter.formatGradYear(requester?.gradYear),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.goldDark,
+                              color: AppColors.isDark(context)
+                                  ? AppColors.goldAccent
+                                  : AppColors.goldDark,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -245,9 +248,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           const SizedBox(height: 2),
                           Text(
                             requester!.headline!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
-                              color: AppColors.textSecondary,
+                              color: AppColors.subtext(context),
                             ),
                           ),
                         ],
@@ -319,25 +322,25 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(
               Icons.handshake_outlined,
               size: 48,
-              color: AppColors.textMuted,
+              color: AppColors.muted(context),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'No active connections yet.',
               style: TextStyle(
                 fontSize: 15,
-                color: AppColors.textSecondary,
+                color: AppColors.subtext(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
               'Explore the Directory to connect with Old Boys!',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 13, color: AppColors.muted(context)),
             ),
           ],
         ),
@@ -358,8 +361,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: AppColors.navyPrimary.withValues(
-                    alpha: 0.08,
+                  backgroundColor: AppColors.brand(context).withValues(
+                    alpha: 0.12,
                   ),
                   backgroundImage:
                       (otherProfile?.avatarUrl != null &&
@@ -371,10 +374,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           otherProfile!.avatarUrl!.isEmpty)
                       ? Text(
                           otherProfile?.initials ?? 'OB',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.navyPrimary,
+                            color: AppColors.brand(context),
                           ),
                         )
                       : null,
@@ -386,18 +389,18 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                     children: [
                       Text(
                         otherProfile?.fullName ?? 'Connected Old Boy',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.navyDark,
+                          color: AppColors.heading(context),
                         ),
                       ),
                       if (otherProfile?.headline != null)
                         Text(
                           otherProfile!.headline!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
-                            color: AppColors.textSecondary,
+                            color: AppColors.subtext(context),
                           ),
                         ),
                     ],

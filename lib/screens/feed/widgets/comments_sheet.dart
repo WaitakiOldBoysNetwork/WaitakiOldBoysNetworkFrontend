@@ -87,9 +87,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppColors.card(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -100,7 +100,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.borderDarker,
+                color: AppColors.lineDarker(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -114,10 +114,10 @@ class _CommentsSheetState extends State<CommentsSheet> {
               children: [
                 Text(
                   'Comments (${_comments.length})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.navyDark,
+                    color: AppColors.heading(context),
                   ),
                 ),
                 IconButton(
@@ -132,9 +132,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
           // Comments List
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
-                      color: AppColors.navyPrimary,
+                      color: AppColors.brand(context),
                     ),
                   )
                 : _comments.isEmpty
@@ -142,7 +142,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                     child: Text(
                       'No comments yet. Start the conversation!',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: AppColors.muted(context),
                         fontSize: 14,
                       ),
                     ),
@@ -161,8 +161,8 @@ class _CommentsSheetState extends State<CommentsSheet> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: AppColors.navyPrimary.withValues(
-                              alpha: 0.1,
+                            backgroundColor: AppColors.brand(context).withValues(
+                              alpha: 0.12,
                             ),
                             backgroundImage:
                                 (author?.avatarUrl != null &&
@@ -174,10 +174,10 @@ class _CommentsSheetState extends State<CommentsSheet> {
                                     author!.avatarUrl!.isEmpty)
                                 ? Text(
                                     author?.initials ?? 'OB',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.navyPrimary,
+                                      color: AppColors.brand(context),
                                     ),
                                   )
                                 : null,
@@ -187,9 +187,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceMuted,
+                                color: AppColors.cardMuted(context),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: AppColors.line(context)),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,19 +200,19 @@ class _CommentsSheetState extends State<CommentsSheet> {
                                     children: [
                                       Text(
                                         author?.fullName ?? 'Old Boy',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5,
-                                          color: AppColors.navyDark,
+                                          color: AppColors.heading(context),
                                         ),
                                       ),
                                       Text(
                                         DateFormatter.timeAgo(
                                           comment.createdAt,
                                         ),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11,
-                                          color: AppColors.textMuted,
+                                          color: AppColors.muted(context),
                                         ),
                                       ),
                                     ],
@@ -222,9 +222,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
                                       DateFormatter.formatGradYear(
                                         author?.gradYear,
                                       ),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
-                                        color: AppColors.crimson,
+                                        color: AppColors.danger(context),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -232,9 +232,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
                                   const SizedBox(height: 6),
                                   Text(
                                     comment.content,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13.5,
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.body(context),
                                       height: 1.35,
                                     ),
                                   ),
@@ -256,9 +256,9 @@ class _CommentsSheetState extends State<CommentsSheet> {
               top: 10,
               bottom: MediaQuery.of(context).viewInsets.bottom + 12,
             ),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(top: BorderSide(color: AppColors.border)),
+            decoration: BoxDecoration(
+              color: AppColors.card(context),
+              border: Border(top: BorderSide(color: AppColors.line(context))),
             ),
             child: Row(
               children: [
@@ -277,7 +277,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(color: AppColors.line(context)),
                       ),
                     ),
                   ),

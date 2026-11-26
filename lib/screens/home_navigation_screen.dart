@@ -6,6 +6,7 @@ import '../models/profile.dart';
 import '../services/auth_service.dart';
 import '../services/directory_service.dart';
 import '../services/profile_service.dart';
+import '../services/theme_service.dart';
 import 'directory/directory_screen.dart';
 import 'feed/feed_screen.dart';
 import 'feed/widgets/create_post_dialog.dart';
@@ -145,36 +146,36 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.crimson.withValues(alpha: 0.1),
+                color: AppColors.danger(ctx).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.logout_rounded,
-                color: AppColors.crimson,
+                color: AppColors.danger(ctx),
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Sign Out',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppColors.navyDark,
+                color: AppColors.heading(ctx),
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to sign out of the Waitaki Old Boys Network?',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          style: TextStyle(color: AppColors.subtext(ctx), fontSize: 14),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
+              foregroundColor: AppColors.subtext(ctx),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -216,31 +217,31 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.crimson.withValues(alpha: 0.1),
+                color: AppColors.danger(ctx).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.delete_forever_rounded,
-                color: AppColors.crimson,
+                color: AppColors.danger(ctx),
                 size: 22,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Delete Account?',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
-                  color: AppColors.navyDark,
+                  color: AppColors.heading(ctx),
                 ),
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'This action is irreversible. All of your profile details, Waitaki heritage information, posts, comments, likes, and connections will be permanently wiped.',
-          style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary, height: 1.4),
+          style: TextStyle(fontSize: 13.5, color: AppColors.subtext(ctx), height: 1.4),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
@@ -306,7 +307,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: Row(
         children: [
           // 1. Clean Left Sidebar
@@ -320,24 +321,24 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.crimson.withValues(alpha: 0.08),
-                      border: const Border(
-                        bottom: BorderSide(color: AppColors.crimson, width: 1.5),
+                      color: AppColors.danger(context).withValues(alpha: 0.08),
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.danger(context), width: 1.5),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline_rounded,
-                          color: AppColors.crimson,
+                          color: AppColors.danger(context),
                           size: 20,
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Finish setting up your profile to access the directory',
                             style: TextStyle(
-                              color: AppColors.navyDark,
+                              color: AppColors.heading(context),
                               fontWeight: FontWeight.w600,
                               fontSize: 13.5,
                             ),
@@ -391,13 +392,13 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
       curve: Curves.easeInOut,
       width: sidebarWidth,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: const Border(
-          right: BorderSide(color: AppColors.border, width: 1),
+        color: AppColors.card(context),
+        border: Border(
+          right: BorderSide(color: AppColors.line(context), width: 1),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navyPrimary.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: AppColors.isDark(context) ? 0.2 : 0.04),
             blurRadius: 12,
             offset: const Offset(2, 0),
           ),
@@ -410,7 +411,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
           // 1. Top Branding: "Waitaki Old Boys Network"
           _buildTopBranding(isCompact, isAutoCompact),
 
-          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          Divider(height: 1, thickness: 1, color: AppColors.line(context)),
           const SizedBox(height: 12),
 
           // 2. Navigation Items
@@ -516,9 +517,73 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
             ),
           ),
 
+          // 3.5 Theme Toggle (Light / Dark Mode)
+          _buildThemeToggle(isCompact),
+
           // 4. User Profile Footer
           _buildUserFooter(isCompact),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeToggle(bool isCompact) {
+    final isDark = AppColors.isDark(context);
+    if (isCompact) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Center(
+          child: Tooltip(
+            message: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+            child: IconButton(
+              onPressed: () => ThemeService().toggleTheme(),
+              icon: Icon(
+                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                color: AppColors.subtext(context),
+                size: 21,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => ThemeService().toggleTheme(),
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                  color: AppColors.subtext(context),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isDark ? 'Light Mode' : 'Dark Mode',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.body(context),
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: isDark,
+                  onChanged: (_) => ThemeService().toggleTheme(),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -549,10 +614,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.chevron_right_rounded,
                       size: 20,
-                      color: AppColors.textMuted,
+                      color: AppColors.muted(context),
                     ),
                     tooltip: 'Expand sidebar',
                     padding: EdgeInsets.zero,
@@ -592,12 +657,12 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Waitaki Old Boys',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.navyDark,
+                      color: AppColors.heading(context),
                       letterSpacing: -0.3,
                       height: 1.15,
                     ),
@@ -605,14 +670,16 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text.rich(
-                    const TextSpan(
+                    TextSpan(
                       children: [
                         TextSpan(
                           text: 'Network',
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.goldDark,
+                            color: AppColors.isDark(context)
+                                ? AppColors.goldAccent
+                                : AppColors.goldDark,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -620,7 +687,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                           text: ' • Est. 1883',
                           style: TextStyle(
                             fontSize: 10.5,
-                            color: AppColors.textMuted,
+                            color: AppColors.muted(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -637,10 +704,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
           // Collapse Toggle Button
           if (!isAutoCompact)
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.chevron_left_rounded,
                 size: 20,
-                color: AppColors.textMuted,
+                color: AppColors.muted(context),
               ),
               tooltip: 'Collapse sidebar',
               padding: EdgeInsets.zero,
@@ -677,7 +744,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                 height: 46,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.navyPrimary.withValues(alpha: 0.08)
+                      ? AppColors.brand(context).withValues(alpha: 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -689,8 +756,8 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     child: Icon(
                       isSelected ? activeIcon : icon,
                       color: isSelected
-                          ? AppColors.navyPrimary
-                          : AppColors.textSecondary,
+                          ? AppColors.brand(context)
+                          : AppColors.subtext(context),
                       size: 22,
                     ),
                   ),
@@ -707,7 +774,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.navyPrimary.withValues(alpha: 0.08)
+            ? AppColors.brand(context).withValues(alpha: 0.12)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
       ),
@@ -720,7 +787,9 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
             backgroundColor: AppColors.crimson,
             child: Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? AppColors.navyPrimary : AppColors.textSecondary,
+              color: isSelected
+                  ? AppColors.brand(context)
+                  : AppColors.subtext(context),
               size: 21,
             ),
           ),
@@ -731,7 +800,9 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? AppColors.navyDark : AppColors.textPrimary,
+                color: isSelected
+                    ? AppColors.heading(context)
+                    : AppColors.body(context),
                 letterSpacing: -0.2,
               ),
             ),
@@ -772,9 +843,9 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     return Container(
       width: isCompact ? 76.0 : double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
+          top: BorderSide(color: AppColors.line(context), width: 1),
         ),
       ),
       child: isCompact
@@ -786,7 +857,8 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                   borderRadius: BorderRadius.circular(20),
                   child: CircleAvatar(
                     radius: 17,
-                    backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.1),
+                    backgroundColor:
+                        AppColors.brand(context).withValues(alpha: 0.12),
                     backgroundImage: (profile?.avatarUrl != null &&
                             profile!.avatarUrl!.isNotEmpty)
                         ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -795,10 +867,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                             profile!.avatarUrl!.isEmpty)
                         ? Text(
                             profile?.initials ?? 'OB',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.navyPrimary,
+                              color: AppColors.brand(context),
                             ),
                           )
                         : null,
@@ -813,7 +885,8 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                   borderRadius: BorderRadius.circular(20),
                   child: CircleAvatar(
                     radius: 18,
-                    backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.1),
+                    backgroundColor:
+                        AppColors.brand(context).withValues(alpha: 0.12),
                     backgroundImage: (profile?.avatarUrl != null &&
                             profile!.avatarUrl!.isNotEmpty)
                         ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -822,10 +895,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                             profile!.avatarUrl!.isEmpty)
                         ? Text(
                             profile?.initials ?? 'OB',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.navyPrimary,
+                              color: AppColors.brand(context),
                             ),
                           )
                         : null,
@@ -841,10 +914,10 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                       children: [
                         Text(
                           profile?.fullName ?? 'Waitakian Old Boy',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.navyDark,
+                            color: AppColors.heading(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -853,9 +926,9 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                           profile?.gradYear != null
                               ? 'Class of ${profile!.gradYear}'
                               : 'Alumni Network',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.textMuted,
+                            color: AppColors.muted(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -867,19 +940,21 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                 PopupMenuButton<String>(
                   tooltip: 'Account Menu',
                   padding: EdgeInsets.zero,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.more_vert_rounded,
                     size: 19,
-                    color: AppColors.textMuted,
+                    color: AppColors.muted(context),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.border),
+                    side: BorderSide(color: AppColors.line(context)),
                   ),
-                  offset: const Offset(0, -210),
+                  offset: const Offset(0, -240),
                   onSelected: (val) {
                     if (val == 'profile') {
                       _navigateToIndex(3);
+                    } else if (val == 'toggle_theme') {
+                      ThemeService().toggleTheme();
                     } else if (val == 'terms') {
                       TermsAndConditionsScreen.show(context);
                     } else if (val == 'privacy') {
@@ -890,99 +965,124 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                       _confirmDeleteAccount();
                     }
                   },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem<String>(
-                      value: 'profile',
-                      height: 38,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline_rounded,
-                            size: 17,
-                            color: AppColors.textSecondary,
-                          ),
-                          SizedBox(width: 10),
-                          Text('My Profile', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'terms',
-                      height: 38,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.gavel_rounded,
-                            size: 17,
-                            color: AppColors.textSecondary,
-                          ),
-                          SizedBox(width: 10),
-                          Text('Terms & Conditions', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'privacy',
-                      height: 38,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.privacy_tip_outlined,
-                            size: 17,
-                            color: AppColors.textSecondary,
-                          ),
-                          SizedBox(width: 10),
-                          Text('Privacy Policy', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(height: 1),
-                    const PopupMenuItem<String>(
-                      value: 'signout',
-                      height: 38,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.logout_rounded,
-                            size: 17,
-                            color: AppColors.navyDark,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            'Sign Out',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.navyDark,
-                              fontWeight: FontWeight.w600,
+                  itemBuilder: (ctx) {
+                    final isDark = AppColors.isDark(ctx);
+                    return [
+                      PopupMenuItem<String>(
+                        value: 'profile',
+                        height: 38,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.person_outline_rounded,
+                              size: 17,
+                              color: AppColors.subtext(ctx),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 10),
+                            const Text('My Profile', style: TextStyle(fontSize: 13)),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuDivider(height: 1),
-                    const PopupMenuItem<String>(
-                      value: 'delete_account',
-                      height: 38,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.delete_forever_rounded,
-                            size: 17,
-                            color: AppColors.crimson,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            'Delete Account',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.crimson,
-                              fontWeight: FontWeight.w600,
+                      PopupMenuItem<String>(
+                        value: 'toggle_theme',
+                        height: 38,
+                        child: Row(
+                          children: [
+                            Icon(
+                              isDark
+                                  ? Icons.light_mode_outlined
+                                  : Icons.dark_mode_outlined,
+                              size: 17,
+                              color: AppColors.subtext(ctx),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 10),
+                            Text(
+                              isDark ? 'Light Mode' : 'Dark Mode',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      PopupMenuItem<String>(
+                        value: 'terms',
+                        height: 38,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.gavel_rounded,
+                              size: 17,
+                              color: AppColors.subtext(ctx),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text('Terms & Conditions',
+                                style: TextStyle(fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'privacy',
+                        height: 38,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.privacy_tip_outlined,
+                              size: 17,
+                              color: AppColors.subtext(ctx),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text('Privacy Policy',
+                                style: TextStyle(fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(height: 1),
+                      PopupMenuItem<String>(
+                        value: 'signout',
+                        height: 38,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.logout_rounded,
+                              size: 17,
+                              color: AppColors.heading(ctx),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Sign Out',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.heading(ctx),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(height: 1),
+                      PopupMenuItem<String>(
+                        value: 'delete_account',
+                        height: 38,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete_forever_rounded,
+                              size: 17,
+                              color: AppColors.danger(ctx),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Delete Account',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.danger(ctx),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ];
+                  },
                 ),
               ],
             ),

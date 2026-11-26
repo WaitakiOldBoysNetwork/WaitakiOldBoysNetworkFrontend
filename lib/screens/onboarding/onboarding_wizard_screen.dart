@@ -427,7 +427,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             : null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -442,9 +442,9 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                 shadowColor: Colors.black.withValues(alpha: 0.08),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: AppColors.line(context)),
                 ),
-                color: AppColors.surface,
+                color: AppColors.card(context),
                 child: Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: isCompact ? 16 : 24,
@@ -488,12 +488,12 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.navyPrimary
-                                  .withValues(alpha: 0.06),
+                              color: AppColors.brand(context)
+                                  .withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: AppColors.navyPrimary
-                                    .withValues(alpha: 0.18),
+                                color: AppColors.brand(context)
+                                    .withValues(alpha: 0.22),
                               ),
                             ),
                             child: Row(
@@ -503,7 +503,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                       ? Icons.person_add_alt_1_rounded
                                       : Icons.account_circle_outlined,
                                   size: 18,
-                                  color: AppColors.navyPrimary,
+                                  color: AppColors.brand(context),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
@@ -511,9 +511,9 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                     widget.isNewAccount
                                         ? 'No existing account matched "$prefilledIdentifier". Complete the details below to create your account, or tap Back to edit.'
                                         : 'Welcome back! Finish your profile details below for "$prefilledIdentifier".',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12.5,
-                                      color: AppColors.navyDark,
+                                      color: AppColors.heading(context),
                                       height: 1.35,
                                     ),
                                   ),
@@ -584,12 +584,12 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         SizedBox(height: fieldGap),
 
                         // Phone Number
-                        const Text(
+                        Text(
                           'Phone Number',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
-                            color: AppColors.textPrimary,
+                            color: AppColors.body(context),
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -625,10 +625,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
                         // Share my contact info toggle (controls both email and phone visibility)
                         Material(
-                          color: AppColors.surfaceMuted,
+                          color: AppColors.cardMuted(context),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: AppColors.border),
+                            side: BorderSide(color: AppColors.line(context)),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: SwitchListTile(
@@ -636,19 +636,19 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                               horizontal: 14,
                               vertical: 2,
                             ),
-                            title: const Text(
+                            title: Text(
                               'Share my contact info',
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.navyDark,
+                                color: AppColors.heading(context),
                               ),
                             ),
-                            subtitle: const Text(
+                            subtitle: Text(
                               'Allow other Old Boys to view your email and phone number',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: AppColors.subtext(context),
                               ),
                             ),
                             value: _sharePhoneOnProfile,
@@ -662,12 +662,12 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         // Email & Password Credentials (when creating a new account or unauthenticated)
                         if (showCredentials) ...[
                           SizedBox(height: fieldGap),
-                          const Text(
+                          Text(
                             'Email Address',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
-                              color: AppColors.textPrimary,
+                              color: AppColors.body(context),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -700,10 +700,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                             widget.isNewAccount
                                 ? 'Create Password'
                                 : 'Account Password',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
-                              color: AppColors.textPrimary,
+                              color: AppColors.body(context),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -723,7 +723,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                       ? Icons.visibility_outlined
                                       : Icons.visibility_off_outlined,
                                   size: 20,
-                                  color: AppColors.textMuted,
+                                  color: AppColors.muted(context),
                                 ),
                                 onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword,
@@ -759,27 +759,29 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                             ),
                             margin: const EdgeInsets.only(bottom: 14),
                             decoration: BoxDecoration(
-                              color: AppColors.crimson.withValues(alpha: 0.08),
+                              color: AppColors.danger(context)
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: AppColors.crimson.withValues(alpha: 0.4),
+                                color: AppColors.danger(context)
+                                    .withValues(alpha: 0.4),
                               ),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.error_outline,
-                                  color: AppColors.crimson,
+                                  color: AppColors.danger(context),
                                   size: 18,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12.5,
-                                      color: AppColors.crimson,
+                                      color: AppColors.danger(context),
                                       fontWeight: FontWeight.w600,
                                       height: 1.35,
                                     ),
@@ -787,10 +789,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                                 ),
                                 IconButton(
                                   tooltip: 'Dismiss error',
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.close,
                                     size: 16,
-                                    color: AppColors.crimson,
+                                    color: AppColors.danger(context),
                                   ),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(
@@ -889,17 +891,17 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
           style: TextStyle(
             fontSize: isCompact ? 20 : 22,
             fontWeight: FontWeight.bold,
-            color: AppColors.navyDark,
+            color: AppColors.heading(context),
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Complete Your Profile Setup',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: AppColors.textSecondary,
+            color: AppColors.subtext(context),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -975,13 +977,13 @@ class _AgePickerDialogState extends State<_AgePickerDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Select Your Age',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.navyDark,
+                        color: AppColors.heading(context),
                       ),
                     ),
                   ),
@@ -1027,9 +1029,9 @@ class _AgePickerDialogState extends State<_AgePickerDialog> {
                         selected: isSelected,
                         title: Text('$age years old'),
                         trailing: isSelected
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check,
-                                color: AppColors.navyPrimary,
+                                color: AppColors.brand(context),
                                 size: 18,
                               )
                             : null,

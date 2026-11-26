@@ -103,7 +103,8 @@ class OldBoyGridCard extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                          border: Border.all(
+                              color: AppColors.card(context), width: 3),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.08),
@@ -114,7 +115,8 @@ class OldBoyGridCard extends StatelessWidget {
                         ),
                         child: CircleAvatar(
                           radius: 28,
-                          backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.08),
+                          backgroundColor:
+                              AppColors.brand(context).withValues(alpha: 0.12),
                           backgroundImage: (profile.avatarUrl != null &&
                                   profile.avatarUrl!.isNotEmpty)
                               ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -123,10 +125,10 @@ class OldBoyGridCard extends StatelessWidget {
                                   profile.avatarUrl!.isEmpty)
                               ? Text(
                                   profile.initials,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.navyPrimary,
+                                    color: AppColors.brand(context),
                                   ),
                                 )
                               : null,
@@ -144,10 +146,10 @@ class OldBoyGridCard extends StatelessWidget {
                         Text(
                           profile.fullName,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.navyDark,
+                            color: AppColors.heading(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -167,10 +169,12 @@ class OldBoyGridCard extends StatelessWidget {
                             ),
                             child: Text(
                               'Class of ${profile.gradYear}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.goldDark,
+                                color: AppColors.isDark(context)
+                                    ? AppColors.goldAccent
+                                    : AppColors.goldDark,
                               ),
                             ),
                           )
@@ -185,9 +189,9 @@ class OldBoyGridCard extends StatelessWidget {
                           Text(
                             profile.headline!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: AppColors.subtext(context),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -197,20 +201,20 @@ class OldBoyGridCard extends StatelessWidget {
                           Text(
                             profile.bio!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: AppColors.subtext(context),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           )
                         else
-                          const Text(
+                          Text(
                             'Waitaki Boys\' High School Old Boy',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textMuted,
+                              color: AppColors.muted(context),
                             ),
                             maxLines: 1,
                           ),
@@ -223,18 +227,18 @@ class OldBoyGridCard extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_outlined,
                                 size: 13,
-                                color: AppColors.textMuted,
+                                color: AppColors.muted(context),
                               ),
                               const SizedBox(width: 3),
                               Flexible(
                                 child: Text(
                                   profile.city!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11.5,
-                                    color: AppColors.textMuted,
+                                    color: AppColors.muted(context),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -250,7 +254,7 @@ class OldBoyGridCard extends StatelessWidget {
                         // Action Button
                         SizedBox(
                           width: double.infinity,
-                          child: _buildActionButton(),
+                          child: _buildActionButton(context),
                         ),
                       ],
                     ),
@@ -264,21 +268,21 @@ class OldBoyGridCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton() {
+  Widget _buildActionButton(BuildContext context) {
     if (isSelf) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
+          color: AppColors.cardMuted(context),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Text(
+        child: Text(
           'Your Profile',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: AppColors.textMuted,
+            color: AppColors.muted(context),
           ),
         ),
       );

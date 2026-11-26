@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/directory_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/theme_service.dart';
 import '../legal/legal_screens.dart';
 import 'edit_profile_screen.dart';
 
@@ -261,9 +262,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.photo_library_outlined,
-                color: AppColors.navyPrimary,
+                color: AppColors.brand(ctx),
               ),
               title: const Text('Upload new banner photo'),
               onTap: () {
@@ -273,13 +274,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             if (_profile?.bannerUrl != null && _profile!.bannerUrl!.isNotEmpty)
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.delete_outline,
-                  color: AppColors.crimson,
+                  color: AppColors.danger(ctx),
                 ),
-                title: const Text(
+                title: Text(
                   'Remove banner photo',
-                  style: TextStyle(color: AppColors.crimson),
+                  style: TextStyle(color: AppColors.danger(ctx)),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -325,10 +326,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _profile == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
+      return Scaffold(
+        backgroundColor: AppColors.bg(context),
         body: Center(
-          child: CircularProgressIndicator(color: AppColors.navyPrimary),
+          child: CircularProgressIndicator(color: AppColors.brand(context)),
         ),
       );
     }
@@ -338,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final canGoBack = Navigator.canPop(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         leading: canGoBack
             ? IconButton(
@@ -351,12 +352,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
-          if (isSelf)
+          if (isSelf) ...[
+            IconButton(
+              icon: Icon(
+                AppColors.isDark(context)
+                    ? Icons.light_mode_outlined
+                    : Icons.dark_mode_outlined,
+              ),
+              tooltip: AppColors.isDark(context)
+                  ? 'Switch to light mode'
+                  : 'Switch to dark mode',
+              onPressed: () => ThemeService().toggleTheme(),
+            ),
             IconButton(
               icon: const Icon(Icons.logout_rounded),
               tooltip: 'Sign Out',
               onPressed: _handleSignOut,
             ),
+          ],
         ],
       ),
       body: Center(
@@ -535,14 +548,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: AppColors.surface,
+                                            color: AppColors.card(context),
                                             width: 4,
                                           ),
                                         ),
                                         child: CircleAvatar(
                                           radius: 46,
-                                          backgroundColor: AppColors.navyPrimary
-                                              .withValues(alpha: 0.1),
+                                          backgroundColor: AppColors.brand(context)
+                                              .withValues(alpha: 0.12),
                                           backgroundImage:
                                               (profile?.avatarUrl != null &&
                                                   profile!
@@ -557,11 +570,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   profile!.avatarUrl!.isEmpty)
                                               ? Text(
                                                   profile?.initials ?? 'OB',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 28,
                                                     fontWeight: FontWeight.bold,
-                                                    color:
-                                                        AppColors.navyPrimary,
+                                                    color: AppColors.brand(context),
                                                   ),
                                                 )
                                               : null,
@@ -644,10 +656,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       Flexible(
                                         child: Text(
                                           profile?.fullName ?? 'Old Boy',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.w800,
-                                            color: AppColors.navyDark,
+                                            color: AppColors.heading(context),
                                           ),
                                         ),
                                       ),
@@ -673,10 +685,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             DateFormatter.formatGradYear(
                                               profile?.gradYear,
                                             ),
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
-                                              color: AppColors.goldDark,
+                                              color: AppColors.isDark(context)
+                                                  ? AppColors.goldAccent
+                                                  : AppColors.goldDark,
                                             ),
                                           ),
                                         ),
@@ -688,9 +702,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     const SizedBox(height: 6),
                                     Text(
                                       profile.headline!,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14.5,
-                                        color: AppColors.textSecondary,
+                                        color: AppColors.subtext(context),
                                         height: 1.35,
                                       ),
                                     ),
@@ -700,17 +714,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.location_on_outlined,
                                           size: 16,
-                                          color: AppColors.textMuted,
+                                          color: AppColors.muted(context),
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           profile.city!,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: AppColors.textMuted,
+                                            color: AppColors.muted(context),
                                           ),
                                         ),
                                       ],
@@ -742,29 +756,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Row(
-                                children: const [
+                                children: [
                                   Icon(
                                     Icons.person_outline,
-                                    color: AppColors.navyPrimary,
+                                    color: AppColors.brand(context),
                                     size: 20,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'About',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.navyDark,
+                                      color: AppColors.heading(context),
                                     ),
                                   ),
                                 ],
                               ),
                               if (isSelf)
                                 IconButton(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.edit_outlined,
                                     size: 18,
-                                    color: AppColors.textMuted,
+                                    color: AppColors.muted(context),
                                   ),
                                   tooltip: 'Edit Bio',
                                   visualDensity: VisualDensity.compact,
@@ -785,9 +799,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 12),
                           Text(
                             profile.bio!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14.5,
-                              color: AppColors.navyDark,
+                              color: AppColors.body(context),
                               height: 1.55,
                             ),
                           ),
@@ -821,14 +835,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.navyPrimary.withValues(
-                                  alpha: 0.08,
+                                color: AppColors.brand(context).withValues(
+                                  alpha: 0.12,
                                 ),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.edit_note_rounded,
-                                color: AppColors.navyPrimary,
+                                color: AppColors.brand(context),
                                 size: 22,
                               ),
                             ),
@@ -836,29 +850,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
+                                children: [
                                   Text(
                                     'Add a bio to your profile',
                                     style: TextStyle(
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.navyDark,
+                                      color: AppColors.heading(context),
                                     ),
                                   ),
-                                  SizedBox(height: 3),
+                                  const SizedBox(height: 3),
                                   Text(
                                     'Share your story, memories from WBHS, or what you\'re up to today.',
                                     style: TextStyle(
                                       fontSize: 12.5,
-                                      color: AppColors.textMuted,
+                                      color: AppColors.muted(context),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right,
-                              color: AppColors.textMuted,
+                              color: AppColors.muted(context),
                             ),
                           ],
                         ),
@@ -881,30 +895,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: const [
-                            Icon(
+                          children: [
+                            const Icon(
                               Icons.verified,
                               color: AppColors.goldAccent,
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               'Waitaki Old Boys\' Association',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.navyDark,
+                                color: AppColors.heading(context),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'Waitaki Boys\' High School (Oamaru, New Zealand) was established in 1883. '
                           'As an Old Boy, you are connected to a worldwide fellowship of leaders, athletes, academics, and innovators.',
                           style: TextStyle(
                             fontSize: 13.5,
-                            color: AppColors.textSecondary,
+                            color: AppColors.subtext(context),
                             height: 1.45,
                           ),
                         ),
@@ -917,17 +931,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.navyPrimary.withValues(
-                                  alpha: 0.08,
+                                color: AppColors.brand(context).withValues(
+                                  alpha: 0.12,
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
-                                'Motto: Qaunti Est Sapere',
+                              child: Text(
+                                'Motto: Quanti Est Sapere',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.navyPrimary,
+                                  color: AppColors.brand(context),
                                 ),
                               ),
                             ),
@@ -989,12 +1003,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Profile Information',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppColors.navyDark,
+                color: AppColors.heading(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -1011,7 +1025,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppColors.navyPrimary),
+          Icon(icon, size: 20, color: AppColors.brand(context)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1019,19 +1033,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted,
+                    color: AppColors.muted(context),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.navyDark,
+                    color: AppColors.heading(context),
                   ),
                 ),
               ],

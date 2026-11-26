@@ -132,18 +132,18 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
             // Top Bar
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.edit_note_rounded,
-                  color: AppColors.navyPrimary,
+                  color: AppColors.brand(context),
                   size: 24,
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Share with Old Boys Network',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.navyDark,
+                    color: AppColors.heading(context),
                   ),
                 ),
                 const Spacer(),
@@ -161,7 +161,8 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppColors.navyPrimary.withValues(alpha: 0.1),
+                  backgroundColor:
+                      AppColors.brand(context).withValues(alpha: 0.12),
                   backgroundImage: (profile?.avatarUrl != null &&
                           profile!.avatarUrl!.isNotEmpty)
                       ? CachedNetworkImageProvider(profile.avatarUrl!)
@@ -170,10 +171,10 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                           profile!.avatarUrl!.isEmpty)
                       ? Text(
                           profile?.initials ?? 'OB',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.navyPrimary,
+                            color: AppColors.brand(context),
                           ),
                         )
                       : null,
@@ -184,10 +185,10 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                   children: [
                     Text(
                       profile?.fullName ?? 'Waitakian',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14.5,
-                        color: AppColors.navyDark,
+                        color: AppColors.heading(context),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -197,24 +198,24 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceMuted,
+                        color: AppColors.cardMuted(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: AppColors.line(context)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(
                             Icons.public,
                             size: 12,
-                            color: AppColors.textSecondary,
+                            color: AppColors.subtext(context),
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
                             'Visible to all Old Boys',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.textSecondary,
+                              color: AppColors.subtext(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -307,14 +308,20 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
                   onPressed: () {
                     _contentController.text += ' #Reunion2026';
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.event_outlined,
                     size: 18,
-                    color: AppColors.goldDark,
+                    color: AppColors.isDark(context)
+                        ? AppColors.goldAccent
+                        : AppColors.goldDark,
                   ),
-                  label: const Text(
+                  label: Text(
                     'Reunion',
-                    style: TextStyle(color: AppColors.goldDark),
+                    style: TextStyle(
+                      color: AppColors.isDark(context)
+                          ? AppColors.goldAccent
+                          : AppColors.goldDark,
+                    ),
                   ),
                 ),
                 const Spacer(),
