@@ -5,15 +5,25 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../../models/profile.dart';
 import '../../../services/feed_service.dart';
 import '../../../services/profile_service.dart';
+import '../create_post_screen.dart';
 
 class CreatePostDialog extends StatefulWidget {
   const CreatePostDialog({super.key});
 
   static Future<bool?> show(BuildContext context) {
+    if (Responsive.isMobile(context)) {
+      return Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => const CreatePostScreen(),
+          fullscreenDialog: true,
+        ),
+      );
+    }
     return showDialog<bool>(
       context: context,
       barrierDismissible: true,
@@ -118,42 +128,47 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
     final profile = _currentProfile;
 
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       elevation: 8,
-      child: Container(
-        width: 580,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Top Bar
-            Row(
-              children: [
-                Icon(
-                  Icons.edit_note_rounded,
-                  color: AppColors.brand(context),
-                  size: 24,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Share with Old Boys Network',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.heading(context),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 580),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Top Bar
+              Row(
+                children: [
+                  Icon(
+                    Icons.edit_note_rounded,
+                    color: AppColors.brand(context),
+                    size: 24,
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => Navigator.pop(context, false),
-                  tooltip: 'Close',
-                ),
-              ],
-            ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Share with Old Boys Network',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.heading(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.pop(context, false),
+                    tooltip: 'Close',
+                  ),
+                ],
+              ),
             const Divider(height: 24),
 
             // Author Header
@@ -289,73 +304,88 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
             const Divider(height: 1),
             const SizedBox(height: 14),
 
-            // Bottom Actions
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.image_outlined, size: 18),
-                  label: const Text('Add Photo'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 9,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: () {
-                    _contentController.text += ' #Reunion2026';
-                  },
-                  icon: Icon(
-                    Icons.event_outlined,
-                    size: 18,
-                    color: AppColors.isDark(context)
-                        ? AppColors.goldAccent
-                        : AppColors.goldDark,
-                  ),
-                  label: Text(
-                    'Reunion',
-                    style: TextStyle(
-                      color: AppColors.isDark(context)
-                          ? AppColors.goldAccent
-                          : AppColors.goldDark,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _isPosting ? null : _handlePublish,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.navyPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: _isPosting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+              // Bottom Actions
+              Wrap(
+                spacing: 8,
+                runSpacing: 10,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.image_outlined, size: 18),
+                        label: const Text('Add Photo'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 9,
                           ),
-                        )
-                      : const Text(
-                          'Publish Post',
-                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                ),
-              ],
-            ),
-          ],
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: () {
+                          _contentController.text += ' #Reunion2026';
+                        },
+                        icon: Icon(
+                          Icons.event_outlined,
+                          size: 18,
+                          color: AppColors.isDark(context)
+                              ? AppColors.goldAccent
+                              : AppColors.goldDark,
+                        ),
+                        label: Text(
+                          'Reunion',
+                          style: TextStyle(
+                            color: AppColors.isDark(context)
+                                ? AppColors.goldAccent
+                                : AppColors.goldDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _isPosting ? null : _handlePublish,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.navyPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 12,
+                          ),
+                        ),
+                        child: _isPosting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Publish Post',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

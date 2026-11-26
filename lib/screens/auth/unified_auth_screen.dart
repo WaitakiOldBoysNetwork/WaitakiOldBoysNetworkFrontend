@@ -289,24 +289,31 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       builder: (context, _) {
         final busy = _isLoading || _unifiedAuthService.state.isLoading;
         final isDark = AppColors.isDark(context);
+        final isCompact = MediaQuery.sizeOf(context).width < 480;
 
         return Scaffold(
           backgroundColor: AppColors.bg(context),
           body: Stack(
             children: [
-              Center(
-                child: SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: AppColors.line(context)),
-                      ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(28),
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: isCompact
+                        ? const EdgeInsets.fromLTRB(14, 56, 14, 24)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 36,
+                          ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: AppColors.line(context)),
+                        ),
+                    child: Padding(
+                      padding: EdgeInsets.all(isCompact ? 20 : 28),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -590,6 +597,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                   ),
                 ),
               ),
+            ),
             ),
             ),
               Positioned(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/connection.dart';
 import '../../models/profile.dart';
@@ -168,7 +169,12 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
             children: [
               // Search & Filter Box
               Container(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                padding: EdgeInsets.fromLTRB(
+                  Responsive.isMobile(context) ? 12 : 16,
+                  12,
+                  Responsive.isMobile(context) ? 12 : 16,
+                  12,
+                ),
                 color: AppColors.card(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -355,6 +361,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
     }
 
     final currentUserId = SupabaseService.currentUserId;
+    final listPadding = EdgeInsets.all(Responsive.isMobile(context) ? 12 : 16);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -362,10 +369,10 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
         if (isWide) {
           // Responsive 2-column Results Grid
           return GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: listPadding,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 2.2,
+              mainAxisExtent: 156,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
             ),
@@ -376,7 +383,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
 
         // Single Column Results List on narrow mobile screens
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: listPadding,
           itemCount: _oldBoys.length,
           itemBuilder: (context, index) => _buildCard(index, currentUserId),
         );

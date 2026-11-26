@@ -110,7 +110,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.card(context),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -126,6 +126,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: ElevatedButton(
               onPressed: _isPosting ? null : _handlePublish,
               style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.navyPrimary,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 18,
                   vertical: 8,
@@ -164,8 +166,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         children: [
                           CircleAvatar(
                             radius: 22,
-                            backgroundColor: AppColors.navyPrimary.withValues(
-                              alpha: 0.1,
+                            backgroundColor: AppColors.brand(context).withValues(
+                              alpha: 0.12,
                             ),
                             backgroundImage:
                                 (_currentProfile?.avatarUrl != null &&
@@ -179,43 +181,51 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                     _currentProfile!.avatarUrl!.isEmpty)
                                 ? Text(
                                     _currentProfile?.initials ?? 'OB',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: AppColors.navyPrimary,
+                                      color: AppColors.brand(context),
                                     ),
                                   )
                                 : null,
                           ),
                           const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _currentProfile?.fullName ?? 'Old Boy',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: AppColors.navyDark,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _currentProfile?.fullName ?? 'Old Boy',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppColors.heading(context),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.public,
-                                    size: 13,
-                                    color: AppColors.textMuted,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Shared to Waitaki Old Boys Network',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textMuted,
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.public,
+                                      size: 13,
+                                      color: AppColors.muted(context),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        'Shared to Waitaki Old Boys Network',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.muted(context),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -225,16 +235,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       TextField(
                         controller: _contentController,
                         maxLines: null,
+                        minLines: 6,
                         keyboardType: TextInputType.multiline,
                         textCapitalization: TextCapitalization.sentences,
-                        style: const TextStyle(fontSize: 16, height: 1.5),
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                          color: AppColors.body(context),
+                        ),
                         decoration: const InputDecoration(
-                          hintText: 'Share an update, reunion news, or career milestone...',
+                          hintText:
+                              'Share an update, reunion news, or career milestone...',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
+                          filled: false,
                           contentPadding: EdgeInsets.zero,
-                          fillColor: Colors.transparent,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -283,35 +299,57 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
 
               // Bottom Media Bar
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: AppColors.border)),
-                ),
-                child: Row(
-                  children: [
-                    IconButton.outlined(
-                      onPressed: _pickImage,
-                      icon: const Icon(
-                        Icons.image_outlined,
-                        color: AppColors.navyPrimary,
+              SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.card(context),
+                    border: Border(top: BorderSide(color: AppColors.line(context))),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton.outlined(
+                        onPressed: _pickImage,
+                        icon: Icon(
+                          Icons.image_outlined,
+                          color: AppColors.brand(context),
+                        ),
+                        tooltip: 'Attach Image',
                       ),
-                      tooltip: 'Attach Image',
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _selectedImageBytes != null
-                          ? '1 Image attached'
-                          : 'Add photos or documents to your post',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                      const SizedBox(width: 8),
+                      ActionChip(
+                        avatar: Icon(
+                          Icons.event_outlined,
+                          size: 16,
+                          color: AppColors.isDark(context)
+                              ? AppColors.goldAccent
+                              : AppColors.goldDark,
+                        ),
+                        label: const Text('#Reunion2026'),
+                        onPressed: () {
+                          _contentController.text += ' #Reunion2026';
+                        },
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _selectedImageBytes != null
+                              ? '1 Image attached'
+                              : 'Add photo',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.subtext(context),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

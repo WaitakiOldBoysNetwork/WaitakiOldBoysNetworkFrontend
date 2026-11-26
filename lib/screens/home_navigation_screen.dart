@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../core/constants/app_colors.dart';
+import '../core/utils/responsive.dart';
 import '../models/profile.dart';
 import '../services/auth_service.dart';
 import '../services/directory_service.dart';
@@ -291,8 +292,8 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isAutoCompact = screenWidth < 768;
+    final isMobile = Responsive.isMobile(context);
+    final isAutoCompact = Responsive.isTablet(context);
     final isCompact = isAutoCompact || _isCollapsed;
 
     final screens = [
@@ -306,6 +307,77 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
       const ProfileScreen(),
     ];
 
+    if (isMobile) {
+      return Scaffold(
+        backgroundColor: AppColors.bg(context),
+        appBar: _currentIndex == 0 ? _buildMobileFeedAppBar() : null,
+        body: Column(
+          children: [
+            if (_hasIncompleteOnboarding)
+              _buildIncompleteOnboardingBanner(isMobile: true),
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: screens,
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: _currentIndex == 0
+            ? FloatingActionButton(
+                onPressed: _openCreatePost,
+                backgroundColor: AppColors.navyPrimary,
+                foregroundColor: AppColors.goldAccent,
+                tooltip: 'Share Post',
+                child: const Icon(Icons.add_rounded),
+              )
+            : null,
+        bottomNavigationBar: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: AppColors.line(context), width: 1),
+            ),
+          ),
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _navigateToIndex,
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(Icons.feed_outlined),
+                selectedIcon: Icon(Icons.feed_rounded),
+                label: 'Feed',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.people_outline_rounded),
+                selectedIcon: Icon(Icons.people_alt_rounded),
+                label: 'Directory',
+              ),
+              NavigationDestination(
+                icon: Badge(
+                  isLabelVisible: _pendingCount > 0,
+                  label: Text('$_pendingCount'),
+                  backgroundColor: AppColors.crimson,
+                  child: const Icon(Icons.handshake_outlined),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: _pendingCount > 0,
+                  label: Text('$_pendingCount'),
+                  backgroundColor: AppColors.crimson,
+                  child: const Icon(Icons.handshake_rounded),
+                ),
+                label: 'Network',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: Row(
@@ -318,58 +390,7 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
             child: Column(
               children: [
                 if (_hasIncompleteOnboarding)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.danger(context).withValues(alpha: 0.08),
-                      border: Border(
-                        bottom: BorderSide(color: AppColors.danger(context), width: 1.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: AppColors.danger(context),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Finish setting up your profile to access the directory',
-                            style: TextStyle(
-                              color: AppColors.heading(context),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: _resumeOnboarding,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.crimson,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Complete Setup',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildIncompleteOnboardingBanner(isMobile: false),
                 Expanded(
                   child: IndexedStack(
                     index: _currentIndex,
@@ -382,6 +403,171 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
         ],
       ),
     );
+  }
+
+  PreferredSizeWidget _buildMobileFeedAppBar() {
+    final isDark = AppColors.isDark(context);
+
+    return AppBar(
+      titleSpacing: 16,
+      title: Row(
+        children: [
+          Image.asset(
+            'assets/images/logo.png',
+            height: 30,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Waitaki Old Boys',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.heading(context),
+                letterSpacing: -0.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(
+            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          ),
+          tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+          onPressed: () => ThemeService().toggleTheme(),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'Account Menu',
+          icon: const Icon(Icons.more_vert_rounded),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: AppColors.line(context)),
+          ),
+          onSelected: _handleAccountMenuAction,
+          itemBuilder: _buildAccountMenuItems,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIncompleteOnboardingBanner({required bool isMobile}) {
+    final banner = Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 16,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.danger(context).withValues(alpha: 0.08),
+        border: Border(
+          bottom: BorderSide(color: AppColors.danger(context), width: 1.5),
+        ),
+      ),
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: AppColors.danger(context),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Finish setting up your profile to access the directory',
+                        style: TextStyle(
+                          color: AppColors.heading(context),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: _resumeOnboarding,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.crimson,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Complete Setup',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.danger(context),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Finish setting up your profile to access the directory',
+                    style: TextStyle(
+                      color: AppColors.heading(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _resumeOnboarding,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.crimson,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Complete Setup',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+
+    if (isMobile && _currentIndex != 0) {
+      return SafeArea(bottom: false, child: banner);
+    }
+    return banner;
   }
 
   Widget _buildSidebar(bool isCompact, bool isAutoCompact) {
@@ -404,125 +590,133 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment:
-            isCompact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-        children: [
-          // 1. Top Branding: "Waitaki Old Boys Network"
-          _buildTopBranding(isCompact, isAutoCompact),
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: AlignmentDirectional.topStart,
+          minWidth: sidebarWidth,
+          maxWidth: sidebarWidth,
+          child: Column(
+            crossAxisAlignment:
+                isCompact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            children: [
+              // 1. Top Branding: "Waitaki Old Boys Network"
+              _buildTopBranding(isCompact, isAutoCompact),
 
-          Divider(height: 1, thickness: 1, color: AppColors.line(context)),
-          const SizedBox(height: 12),
+              Divider(height: 1, thickness: 1, color: AppColors.line(context)),
+              const SizedBox(height: 12),
 
-          // 2. Navigation Items
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  title: 'Feed',
-                  icon: Icons.feed_outlined,
-                  activeIcon: Icons.feed_rounded,
-                  isCompact: isCompact,
-                ),
-                _buildNavItem(
-                  index: 1,
-                  title: 'Directory',
-                  icon: Icons.people_outline_rounded,
-                  activeIcon: Icons.people_alt_rounded,
-                  isCompact: isCompact,
-                ),
-                _buildNavItem(
-                  index: 2,
-                  title: 'My Network',
-                  icon: Icons.handshake_outlined,
-                  activeIcon: Icons.handshake_rounded,
-                  badgeCount: _pendingCount,
-                  isCompact: isCompact,
-                ),
-                _buildNavItem(
-                  index: 3,
-                  title: 'My Profile',
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  isCompact: isCompact,
-                ),
-
-                const SizedBox(height: 16),
-
-                // 3. Quick Action: Share Post
-                if (!isCompact)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: ElevatedButton.icon(
-                      onPressed: _openCreatePost,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.navyPrimary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.add_rounded,
-                        size: 19,
-                        color: AppColors.goldAccent,
-                      ),
-                      label: const Text(
-                        'Share Post',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
+              // 2. Navigation Items
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _buildNavItem(
+                      index: 0,
+                      title: 'Feed',
+                      icon: Icons.feed_outlined,
+                      activeIcon: Icons.feed_rounded,
+                      isCompact: isCompact,
                     ),
-                  )
-                else
-                  Center(
-                    child: Tooltip(
-                      message: 'Share Post',
-                      child: InkWell(
-                        onTap: _openCreatePost,
-                        borderRadius: BorderRadius.circular(22),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.navyPrimary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.navyPrimary.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                    _buildNavItem(
+                      index: 1,
+                      title: 'Directory',
+                      icon: Icons.people_outline_rounded,
+                      activeIcon: Icons.people_alt_rounded,
+                      isCompact: isCompact,
+                    ),
+                    _buildNavItem(
+                      index: 2,
+                      title: 'My Network',
+                      icon: Icons.handshake_outlined,
+                      activeIcon: Icons.handshake_rounded,
+                      badgeCount: _pendingCount,
+                      isCompact: isCompact,
+                    ),
+                    _buildNavItem(
+                      index: 3,
+                      title: 'My Profile',
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
+                      isCompact: isCompact,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 3. Quick Action: Share Post
+                    if (!isCompact)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: ElevatedButton.icon(
+                          onPressed: _openCreatePost,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.navyPrimary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.add_rounded,
-                              size: 22,
-                              color: AppColors.goldAccent,
+                          icon: const Icon(
+                            Icons.add_rounded,
+                            size: 19,
+                            color: AppColors.goldAccent,
+                          ),
+                          label: const Text(
+                            'Share Post',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Center(
+                        child: Tooltip(
+                          message: 'Share Post',
+                          child: InkWell(
+                            onTap: _openCreatePost,
+                            borderRadius: BorderRadius.circular(22),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppColors.navyPrimary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.navyPrimary
+                                        .withValues(alpha: 0.25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.add_rounded,
+                                  size: 22,
+                                  color: AppColors.goldAccent,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+
+              // 3.5 Theme Toggle (Light / Dark Mode)
+              _buildThemeToggle(isCompact),
+
+              // 4. User Profile Footer
+              _buildUserFooter(isCompact),
+            ],
           ),
-
-          // 3.5 Theme Toggle (Light / Dark Mode)
-          _buildThemeToggle(isCompact),
-
-          // 4. User Profile Footer
-          _buildUserFooter(isCompact),
-        ],
+        ),
       ),
     );
   }
@@ -837,6 +1031,139 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
     );
   }
 
+  void _handleAccountMenuAction(String val) {
+    if (val == 'profile') {
+      _navigateToIndex(3);
+    } else if (val == 'toggle_theme') {
+      ThemeService().toggleTheme();
+    } else if (val == 'terms') {
+      TermsAndConditionsScreen.show(context);
+    } else if (val == 'privacy') {
+      PrivacyPolicyScreen.show(context);
+    } else if (val == 'signout') {
+      _confirmSignOut();
+    } else if (val == 'delete_account') {
+      _confirmDeleteAccount();
+    }
+  }
+
+  List<PopupMenuEntry<String>> _buildAccountMenuItems(BuildContext ctx) {
+    final isDark = AppColors.isDark(ctx);
+    return [
+      PopupMenuItem<String>(
+        value: 'profile',
+        height: 38,
+        child: Row(
+          children: [
+            Icon(
+              Icons.person_outline_rounded,
+              size: 17,
+              color: AppColors.subtext(ctx),
+            ),
+            const SizedBox(width: 10),
+            const Text('My Profile', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+      PopupMenuItem<String>(
+        value: 'toggle_theme',
+        height: 38,
+        child: Row(
+          children: [
+            Icon(
+              isDark
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
+              size: 17,
+              color: AppColors.subtext(ctx),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isDark ? 'Light Mode' : 'Dark Mode',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+      PopupMenuItem<String>(
+        value: 'terms',
+        height: 38,
+        child: Row(
+          children: [
+            Icon(
+              Icons.gavel_rounded,
+              size: 17,
+              color: AppColors.subtext(ctx),
+            ),
+            const SizedBox(width: 10),
+            const Text('Terms & Conditions', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+      PopupMenuItem<String>(
+        value: 'privacy',
+        height: 38,
+        child: Row(
+          children: [
+            Icon(
+              Icons.privacy_tip_outlined,
+              size: 17,
+              color: AppColors.subtext(ctx),
+            ),
+            const SizedBox(width: 10),
+            const Text('Privacy Policy', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(height: 1),
+      PopupMenuItem<String>(
+        value: 'signout',
+        height: 38,
+        child: Row(
+          children: [
+            Icon(
+              Icons.logout_rounded,
+              size: 17,
+              color: AppColors.heading(ctx),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Sign Out',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.heading(ctx),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(height: 1),
+      PopupMenuItem<String>(
+        value: 'delete_account',
+        height: 38,
+        child: Row(
+          children: [
+            Icon(
+              Icons.delete_forever_rounded,
+              size: 17,
+              color: AppColors.danger(ctx),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Delete Account',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.danger(ctx),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
   Widget _buildUserFooter(bool isCompact) {
     final profile = _currentProfile;
 
@@ -950,139 +1277,8 @@ class _HomeNavigationScreenState extends State<HomeNavigationScreen> {
                     side: BorderSide(color: AppColors.line(context)),
                   ),
                   offset: const Offset(0, -240),
-                  onSelected: (val) {
-                    if (val == 'profile') {
-                      _navigateToIndex(3);
-                    } else if (val == 'toggle_theme') {
-                      ThemeService().toggleTheme();
-                    } else if (val == 'terms') {
-                      TermsAndConditionsScreen.show(context);
-                    } else if (val == 'privacy') {
-                      PrivacyPolicyScreen.show(context);
-                    } else if (val == 'signout') {
-                      _confirmSignOut();
-                    } else if (val == 'delete_account') {
-                      _confirmDeleteAccount();
-                    }
-                  },
-                  itemBuilder: (ctx) {
-                    final isDark = AppColors.isDark(ctx);
-                    return [
-                      PopupMenuItem<String>(
-                        value: 'profile',
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.person_outline_rounded,
-                              size: 17,
-                              color: AppColors.subtext(ctx),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text('My Profile', style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'toggle_theme',
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Icon(
-                              isDark
-                                  ? Icons.light_mode_outlined
-                                  : Icons.dark_mode_outlined,
-                              size: 17,
-                              color: AppColors.subtext(ctx),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              isDark ? 'Light Mode' : 'Dark Mode',
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'terms',
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.gavel_rounded,
-                              size: 17,
-                              color: AppColors.subtext(ctx),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text('Terms & Conditions',
-                                style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'privacy',
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.privacy_tip_outlined,
-                              size: 17,
-                              color: AppColors.subtext(ctx),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text('Privacy Policy',
-                                style: TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuDivider(height: 1),
-                      PopupMenuItem<String>(
-                        value: 'signout',
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.logout_rounded,
-                              size: 17,
-                              color: AppColors.heading(ctx),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Sign Out',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.heading(ctx),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuDivider(height: 1),
-                      PopupMenuItem<String>(
-                        value: 'delete_account',
-                        height: 38,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.delete_forever_rounded,
-                              size: 17,
-                              color: AppColors.danger(ctx),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Delete Account',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.danger(ctx),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ];
-                  },
+                  onSelected: _handleAccountMenuAction,
+                  itemBuilder: _buildAccountMenuItems,
                 ),
               ],
             ),

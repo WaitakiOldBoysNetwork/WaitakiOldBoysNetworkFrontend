@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/profile.dart';
 import '../../services/profile_service.dart';
@@ -303,9 +304,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Widget _buildResponsiveFieldPair({
+    required bool isMobile,
+    required Widget first,
+    required Widget second,
+  }) {
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          first,
+          const SizedBox(height: 14),
+          second,
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 14),
+        Expanded(child: second),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasBanner = _bannerUrl != null && _bannerUrl!.trim().isNotEmpty;
+    final isMobile = Responsive.isMobile(context);
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -340,7 +366,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(isMobile ? 16 : 24),
             child: Form(
               key: _formKey,
               child: Column(
@@ -530,30 +556,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _firstNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'First Name',
-                          ),
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
-                        ),
+                  _buildResponsiveFieldPair(
+                    isMobile: isMobile,
+                    first: TextFormField(
+                      controller: _firstNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'First Name',
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _lastNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Last Name',
-                          ),
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
-                        ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                    ),
+                    second: TextFormField(
+                      controller: _lastNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Last Name',
                       ),
-                    ],
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -612,54 +632,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _gradYearController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Final Year / Class of',
-                            hintText: 'e.g. 2012',
-                            prefixIcon: Icon(Icons.school_outlined, size: 20),
-                          ),
-                          validator: (v) {
-                            if (v != null && v.trim().isNotEmpty) {
-                              final val = int.tryParse(v.trim());
-                              if (val == null || val < 1920 || val > 2035) {
-                                return 'Enter valid year';
-                              }
-                            }
-                            return null;
+                  _buildResponsiveFieldPair(
+                    isMobile: isMobile,
+                    first: TextFormField(
+                      controller: _gradYearController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Final Year / Class of',
+                        hintText: 'e.g. 2012',
+                        prefixIcon: Icon(Icons.school_outlined, size: 20),
+                      ),
+                      validator: (v) {
+                        if (v != null && v.trim().isNotEmpty) {
+                          final val = int.tryParse(v.trim());
+                          if (val == null || val < 1920 || val > 2035) {
+                            return 'Enter valid year';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    second: TextFormField(
+                      controller: _houseController,
+                      decoration: InputDecoration(
+                        labelText: 'School House',
+                        hintText: 'e.g. Don, Lee...',
+                        prefixIcon: const Icon(Icons.shield_outlined, size: 20),
+                        suffixIcon: PopupMenuButton<String>(
+                          icon: const Icon(Icons.arrow_drop_down),
+                          onSelected: (val) {
+                            setState(() => _houseController.text = val);
                           },
+                          itemBuilder: (context) => _wbhsHouses
+                              .map(
+                                (h) => PopupMenuItem(
+                                  value: h['name']!,
+                                  child: Text('${h['name']} House (${h['color']})'),
+                                ),
+                              )
+                              .toList(),
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _houseController,
-                          decoration: InputDecoration(
-                            labelText: 'School House',
-                            hintText: 'e.g. Don, Lee...',
-                            prefixIcon: const Icon(Icons.shield_outlined, size: 20),
-                            suffixIcon: PopupMenuButton<String>(
-                              icon: const Icon(Icons.arrow_drop_down),
-                              onSelected: (val) {
-                                setState(() => _houseController.text = val);
-                              },
-                              itemBuilder: (context) => _wbhsHouses
-                                  .map(
-                                    (h) => PopupMenuItem(
-                                      value: h['name']!,
-                                      child: Text('${h['name']} House (${h['color']})'),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 18),
 
@@ -693,46 +707,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _companyController,
-                          decoration: const InputDecoration(
-                            labelText: 'Company / Organisation',
-                            hintText: 'e.g. Fonterra, Bell Gully',
-                            prefixIcon: Icon(Icons.business_outlined, size: 20),
-                          ),
+                  _buildResponsiveFieldPair(
+                    isMobile: isMobile,
+                    first: TextFormField(
+                      controller: _companyController,
+                      decoration: const InputDecoration(
+                        labelText: 'Company / Organisation',
+                        hintText: 'e.g. Fonterra, Bell Gully',
+                        prefixIcon: Icon(Icons.business_outlined, size: 20),
+                      ),
+                    ),
+                    second: TextFormField(
+                      controller: _industryController,
+                      decoration: InputDecoration(
+                        labelText: 'Industry Sector',
+                        hintText: 'e.g. Agriculture',
+                        prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                        suffixIcon: PopupMenuButton<String>(
+                          icon: const Icon(Icons.arrow_drop_down),
+                          onSelected: (val) {
+                            if (val != 'Other') {
+                              setState(() => _industryController.text = val);
+                            }
+                          },
+                          itemBuilder: (context) => _commonIndustries
+                              .map(
+                                (ind) => PopupMenuItem(
+                                  value: ind,
+                                  child: Text(ind),
+                                ),
+                              )
+                              .toList(),
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _industryController,
-                          decoration: InputDecoration(
-                            labelText: 'Industry Sector',
-                            hintText: 'e.g. Agriculture',
-                            prefixIcon: const Icon(Icons.category_outlined, size: 20),
-                            suffixIcon: PopupMenuButton<String>(
-                              icon: const Icon(Icons.arrow_drop_down),
-                              onSelected: (val) {
-                                if (val != 'Other') {
-                                  setState(() => _industryController.text = val);
-                                }
-                              },
-                              itemBuilder: (context) => _commonIndustries
-                                  .map(
-                                    (ind) => PopupMenuItem(
-                                      value: ind,
-                                      child: Text(ind),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 24),
 

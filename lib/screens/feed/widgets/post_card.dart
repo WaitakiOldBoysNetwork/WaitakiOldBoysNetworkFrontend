@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/utils/snackbar_helper.dart';
 import '../../../models/post.dart';
 import '../../../models/post_comment.dart';
@@ -12,6 +13,7 @@ import '../../../services/feed_service.dart';
 import '../../../services/profile_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../profile/profile_screen.dart';
+import 'comments_sheet.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -102,6 +104,24 @@ class _PostCardState extends State<PostCard> {
   }
 
   Future<void> _toggleComments() async {
+    if (Responsive.isMobile(context)) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => CommentsSheet(
+          postId: widget.post.id,
+          onCommentAdded: () {
+            if (mounted) {
+              setState(() => _commentsCount += 1);
+            }
+            widget.onPostUpdated?.call();
+          },
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _showInlineComments = !_showInlineComments;
     });
@@ -272,6 +292,8 @@ class _PostCardState extends State<PostCard> {
     final author = widget.post.author;
     final currentUserId = SupabaseService.currentUserId;
     final isMyPost = widget.post.isAuthoredBy(currentUserId);
+    final isMobile = Responsive.isMobile(context);
+    final hPad = isMobile ? 12.0 : 16.0;
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
@@ -285,7 +307,7 @@ class _PostCardState extends State<PostCard> {
         children: [
           // 1. Author Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: EdgeInsets.fromLTRB(hPad, 14, hPad, 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -485,7 +507,7 @@ class _PostCardState extends State<PostCard> {
           // 2. Post Content
           if (widget.post.content.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 6),
               child: SelectableText(
                 widget.post.content,
                 style: TextStyle(
@@ -500,7 +522,8 @@ class _PostCardState extends State<PostCard> {
           if (widget.post.imageUrl != null &&
               widget.post.imageUrl!.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
-            ClipRRect(
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 420),
               child: CachedNetworkImage(
                 imageUrl: widget.post.imageUrl!,
                 width: double.infinity,
@@ -529,7 +552,7 @@ class _PostCardState extends State<PostCard> {
           // 4. Metrics Row
           if (_likesCount > 0 || _commentsCount > 0)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
