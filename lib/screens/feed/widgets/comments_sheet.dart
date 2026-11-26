@@ -198,14 +198,19 @@ class _CommentsSheetState extends State<CommentsSheet> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        author?.fullName ?? 'Old Boy',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13.5,
-                                          color: AppColors.heading(context),
+                                      Expanded(
+                                        child: Text(
+                                          author?.fullName ?? 'Old Boy',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13.5,
+                                            color: AppColors.heading(context),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         DateFormatter.timeAgo(
                                           comment.createdAt,
@@ -249,58 +254,61 @@ class _CommentsSheetState extends State<CommentsSheet> {
           ),
 
           // Comment Input
-          Container(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 10,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 12,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.card(context),
-              border: Border(top: BorderSide(color: AppColors.line(context))),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    minLines: 1,
-                    maxLines: 4,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      hintText: 'Add a thought...',
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: AppColors.line(context)),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 10,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.card(context),
+                border: Border(top: BorderSide(color: AppColors.line(context))),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      minLines: 1,
+                      maxLines: 4,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: 'Add a thought...',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(color: AppColors.line(context)),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _isSending ? null : _handleSendComment,
-                  icon: _isSending
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.arrow_upward_rounded, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.navyPrimary,
-                    foregroundColor: Colors.white,
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: _isSending ? null : _handleSendComment,
+                    icon: _isSending
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.arrow_upward_rounded, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.navyPrimary,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

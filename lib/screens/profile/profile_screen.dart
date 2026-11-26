@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/connection.dart';
 import '../../models/profile.dart';
@@ -337,6 +338,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final profile = _profile;
     final isSelf = _isSelf;
     final canGoBack = Navigator.canPop(context);
+    final isMobile = Responsive.isMobile(context);
+    final cardH = isMobile ? 12.0 : 16.0;
+    final bannerHeight = isMobile ? 124.0 : 145.0;
+    final avatarRadius = isMobile ? 38.0 : 46.0;
+    final avatarOffsetY = isMobile ? -36.0 : -45.0;
+    final detailsOffsetY = isMobile ? -18.0 : -25.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -369,6 +376,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
               tooltip: 'Sign Out',
               onPressed: _handleSignOut,
             ),
+            if (isMobile)
+              PopupMenuButton<String>(
+                tooltip: 'More Options',
+                icon: const Icon(Icons.more_vert_rounded),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: AppColors.line(context)),
+                ),
+                onSelected: (val) {
+                  if (val == 'terms') {
+                    TermsAndConditionsScreen.show(context);
+                  } else if (val == 'privacy') {
+                    PrivacyPolicyScreen.show(context);
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem<String>(
+                    value: 'terms',
+                    height: 38,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.gavel_rounded,
+                          size: 17,
+                          color: AppColors.subtext(ctx),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Terms & Conditions',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'privacy',
+                    height: 38,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.privacy_tip_outlined,
+                          size: 17,
+                          color: AppColors.subtext(ctx),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Privacy Policy',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
           ],
         ],
       ),
@@ -380,13 +441,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 // Banner & Avatar Card
                 Card(
-                  margin: const EdgeInsets.all(16),
+                  margin: EdgeInsets.fromLTRB(cardH, 12, cardH, 8),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
                       // Navy & Gold / Custom Photo Banner
                       Container(
-                        height: 145,
+                        height: bannerHeight,
                         clipBehavior: Clip.antiAlias,
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -530,12 +591,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       // Avatar & Details
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                        padding: EdgeInsets.fromLTRB(
+                          isMobile ? 14 : 20,
+                          0,
+                          isMobile ? 14 : 20,
+                          isMobile ? 16 : 20,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Transform.translate(
-                              offset: const Offset(0, -45),
+                              offset: Offset(0, avatarOffsetY),
                               child: Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -553,7 +619,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ),
                                         ),
                                         child: CircleAvatar(
-                                          radius: 46,
+                                          radius: avatarRadius,
                                           backgroundColor: AppColors.brand(context)
                                               .withValues(alpha: 0.12),
                                           backgroundImage:
@@ -571,7 +637,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ? Text(
                                                   profile?.initials ?? 'OB',
                                                   style: TextStyle(
-                                                    fontSize: 28,
+                                                    fontSize: isMobile ? 22 : 28,
                                                     fontWeight: FontWeight.bold,
                                                     color: AppColors.brand(context),
                                                   ),
@@ -646,7 +712,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                             // Name & Badges
                             Transform.translate(
-                              offset: const Offset(0, -25),
+                              offset: Offset(0, detailsOffsetY),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -720,11 +786,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           color: AppColors.muted(context),
                                         ),
                                         const SizedBox(width: 4),
-                                        Text(
-                                          profile.city!,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: AppColors.muted(context),
+                                        Expanded(
+                                          child: Text(
+                                            profile.city!,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.muted(context),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ],
@@ -743,8 +813,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // About / Bio Card
                 if (profile?.bio != null && profile!.bio!.trim().isNotEmpty)
                   Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                    margin: EdgeInsets.symmetric(
+                      horizontal: cardH,
                       vertical: 8,
                     ),
                     child: Padding(
@@ -811,8 +881,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   )
                 else if (isSelf)
                   Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                    margin: EdgeInsets.symmetric(
+                      horizontal: cardH,
                       vertical: 8,
                     ),
                     child: InkWell(
@@ -881,16 +951,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                 // Details & School Info Card
-                if (profile != null) _buildProfileDetailsCard(profile),
+                if (profile != null) _buildProfileDetailsCard(profile, cardH),
 
                 // Waitaki Heritage & Association Info Card
                 Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                  margin: EdgeInsets.symmetric(
+                    horizontal: cardH,
                     vertical: 8,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(isMobile ? 16 : 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -902,12 +972,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Waitaki Old Boys\' Association',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.heading(context),
+                            Expanded(
+                              child: Text(
+                                'Waitaki Old Boys\' Association',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.heading(context),
+                                ),
                               ),
                             ),
                           ],
@@ -967,7 +1039,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileDetailsCard(Profile p) {
+  Widget _buildProfileDetailsCard(Profile p, double cardH) {
     final items = <Widget>[];
 
     if (p.house != null && p.house!.trim().isNotEmpty) {
@@ -997,7 +1069,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: cardH, vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

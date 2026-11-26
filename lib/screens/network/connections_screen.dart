@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/connection.dart';
 import '../../services/directory_service.dart';
@@ -178,11 +179,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       );
     }
 
+    final isMobile = Responsive.isMobile(context);
+
     return RefreshIndicator(
       onRefresh: _loadData,
       color: AppColors.brand(context),
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
         itemCount: _pendingRequests.length,
         itemBuilder: (context, index) {
           final conn = _pendingRequests[index];
@@ -191,12 +194,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
           return Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isMobile ? 14 : 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
-                    radius: 24,
+                    radius: isMobile ? 22 : 24,
                     backgroundColor: AppColors.brand(context).withValues(
                       alpha: 0.12,
                     ),
@@ -218,7 +221,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           )
                         : null,
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,6 +233,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             fontWeight: FontWeight.w700,
                             color: AppColors.heading(context),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         if (requester?.gradYear != null) ...[
                           const SizedBox(height: 2),
@@ -252,10 +257,14 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                               fontSize: 12.5,
                               color: AppColors.subtext(context),
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                         const SizedBox(height: 12),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             ElevatedButton(
                               onPressed: isProcessing
@@ -282,7 +291,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                                     )
                                   : const Text('Accept'),
                             ),
-                            const SizedBox(width: 8),
                             OutlinedButton(
                               onPressed: isProcessing
                                   ? null
@@ -347,8 +355,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
       );
     }
 
+    final isMobile = Responsive.isMobile(context);
+
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       itemCount: acceptedList.length,
       itemBuilder: (context, index) {
         final conn = acceptedList[index];
@@ -382,7 +392,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                         )
                       : null,
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,6 +404,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                           fontWeight: FontWeight.w700,
                           color: AppColors.heading(context),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (otherProfile?.headline != null)
                         Text(
@@ -402,10 +414,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
                             fontSize: 12.5,
                             color: AppColors.subtext(context),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,

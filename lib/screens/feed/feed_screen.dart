@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../models/connection.dart';
 import '../../models/post.dart';
@@ -46,6 +47,7 @@ class _FeedScreenState extends State<FeedScreen> {
   List<SchoolNotice> _notices = SchoolNotice.defaultNotices;
 
   bool _isLoading = true;
+  bool _showAllNoticesMobile = false;
   String? _errorMessage;
 
   @override
@@ -176,6 +178,7 @@ class _FeedScreenState extends State<FeedScreen> {
       backgroundColor: AppColors.bg(context),
       body: LayoutBuilder(
         builder: (context, constraints) {
+          final isMobile = Responsive.isMobileWidth(constraints.maxWidth);
           final isWide = constraints.maxWidth >= 1000;
           final showRight = constraints.maxWidth >= 700;
 
@@ -196,10 +199,12 @@ class _FeedScreenState extends State<FeedScreen> {
                     : _errorMessage != null
                         ? _buildErrorView()
                         : SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 24,
-                            ),
+                            padding: isMobile
+                                ? const EdgeInsets.fromLTRB(12, 12, 12, 88)
+                                : const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 24,
+                                  ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -222,11 +227,18 @@ class _FeedScreenState extends State<FeedScreen> {
                                 Expanded(
                                   child: Column(
                                     children: [
-                                      _buildDesktopComposerCard(),
-                                      const SizedBox(height: 16),
+                                      isMobile
+                                          ? _buildMobileComposerCard()
+                                          : _buildDesktopComposerCard(),
+                                      SizedBox(height: isMobile ? 12 : 16),
                                       if (!showRight) ...[
-                                        _buildNoticeboardCard(),
-                                        const SizedBox(height: 16),
+                                        _buildNoticeboardCard(compact: isMobile),
+                                        SizedBox(height: isMobile ? 12 : 16),
+                                        if (isMobile &&
+                                            _suggestedOldBoys.isNotEmpty) ...[
+                                          _buildMobileSuggestionsStrip(),
+                                          const SizedBox(height: 12),
+                                        ],
                                       ],
                                       if (_posts.isEmpty)
                                         _buildEmptyFeedCard()
@@ -244,6 +256,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                             },
                                           ),
                                         ),
+                                      if (isMobile) ...[
+                                        const SizedBox(height: 12),
+                                        _buildMobileFooterCard(),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -390,20 +406,20 @@ class _FeedScreenState extends State<FeedScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'My Network',
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: AppColors.textSecondary,
+                              color: AppColors.subtext(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           Text(
                             '${_myConnections.length}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.navyPrimary,
+                              color: AppColors.brand(context),
                             ),
                           ),
                         ],
@@ -519,6 +535,81 @@ class _FeedScreenState extends State<FeedScreen> {
               isExternal ? Icons.open_in_new : Icons.chevron_right,
               size: isExternal ? 13 : 16,
               color: AppColors.muted(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Center Column: Compact Mobile Composer Card
+  Widget _buildMobileComposerCard() {
+    final profile = _currentProfile;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: widget.onNavigateToProfile,
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor:
+                    AppColors.brand(context).withValues(alpha: 0.12),
+                backgroundImage: (profile?.avatarUrl != null &&
+                        profile!.avatarUrl!.isNotEmpty)
+                    ? CachedNetworkImageProvider(profile.avatarUrl!)
+                    : null,
+                child: (profile?.avatarUrl == null ||
+                        profile!.avatarUrl!.isEmpty)
+                    ? Text(
+                        profile?.initials ?? 'OB',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.brand(context),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: InkWell(
+                onTap: _openCreatePost,
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardMuted(context),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: AppColors.line(context)),
+                  ),
+                  child: Text(
+                    'Share an update with Old Boys...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.muted(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: _openCreatePost,
+              tooltip: 'Share Photo',
+              icon: Icon(
+                Icons.image_outlined,
+                color: AppColors.brand(context),
+                size: 22,
+              ),
             ),
           ],
         ),
@@ -814,11 +905,184 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  // Mobile Horizontal Suggested Old Boys Strip
+  Widget _buildMobileSuggestionsStrip() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Old Boys to Connect With',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.heading(context),
+                ),
+              ),
+              InkWell(
+                onTap: widget.onNavigateToDirectory,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    'View all',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.brand(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 162,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _suggestedOldBoys.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final profile = _suggestedOldBoys[index];
+              final targetId = profile.userId ?? profile.id;
+              final isConnecting = _connectingIds.contains(targetId);
+
+              return SizedBox(
+                width: 160,
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileScreen(
+                            userId: targetId,
+                            initialProfile: profile,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: AppColors.brand(context)
+                                .withValues(alpha: 0.12),
+                            backgroundImage: (profile.avatarUrl != null &&
+                                    profile.avatarUrl!.isNotEmpty)
+                                ? CachedNetworkImageProvider(profile.avatarUrl!)
+                                : null,
+                            child: (profile.avatarUrl == null ||
+                                    profile.avatarUrl!.isEmpty)
+                                ? Text(
+                                    profile.initials,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.brand(context),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            profile.fullName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.heading(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                          if (profile.gradYear != null)
+                            Text(
+                              'Class of ${profile.gradYear}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.isDark(context)
+                                    ? AppColors.goldAccent
+                                    : AppColors.goldDark,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                            )
+                          else if (profile.headline != null &&
+                              profile.headline!.isNotEmpty)
+                            Text(
+                              profile.headline!,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.subtext(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const Spacer(),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 28,
+                            child: OutlinedButton(
+                              onPressed: isConnecting
+                                  ? null
+                                  : () => _handleConnect(profile),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              child: isConnecting
+                                  ? const SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Connect',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   // Right Column: Noticeboard
-  Widget _buildNoticeboardCard() {
+  Widget _buildNoticeboardCard({bool compact = false}) {
+    final visibleCount =
+        compact && !_showAllNoticesMobile && _notices.length > 2
+            ? 2
+            : _notices.length;
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(compact ? 14 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -874,7 +1138,7 @@ class _FeedScreenState extends State<FeedScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            for (int i = 0; i < _notices.length; i++) ...[
+            for (int i = 0; i < visibleCount; i++) ...[
               if (i > 0) const Divider(height: 16),
               _buildNoticeItem(
                 title: _notices[i].title,
@@ -883,7 +1147,37 @@ class _FeedScreenState extends State<FeedScreen> {
                 url: _notices[i].url,
               ),
             ],
-            const SizedBox(height: 12),
+            if (compact && _notices.length > 2) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showAllNoticesMobile = !_showAllNoticesMobile;
+                    });
+                  },
+                  icon: Icon(
+                    _showAllNoticesMobile
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _showAllNoticesMobile
+                        ? 'Show less'
+                        : 'Show all (${_notices.length})',
+                  ),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
             InkWell(
               onTap: () => _openUrl('https://hail.to/waitaki-boys-high-school'),
               borderRadius: BorderRadius.circular(6),
@@ -925,6 +1219,61 @@ class _FeedScreenState extends State<FeedScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileFooterCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.account_balance_rounded,
+                  color: AppColors.brand(context),
+                  size: 17,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Waitaki Heritage • Quanti Est Sapere',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.heading(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildQuickLink(
+              icon: Icons.public,
+              label: 'Official WBHS Website',
+              onTap: () => _openUrl('https://www.waitakibhs.school.nz'),
+              isExternal: true,
+            ),
+            const Divider(height: 16),
+            const LegalLinksFooter(
+              textAlign: TextAlign.start,
+              showPrefixText: false,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '© 2026 Waitaki Boys\' High School Old Boys\' Association.',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.muted(context),
               ),
             ),
           ],
