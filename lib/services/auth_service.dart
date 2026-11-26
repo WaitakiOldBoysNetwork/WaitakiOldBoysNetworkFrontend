@@ -56,6 +56,52 @@ class AuthService {
     return isPhoneInput(trimmed);
   }
 
+  static bool isNetworkError(dynamic error) {
+    final str = error.toString().toLowerCase();
+    return str.contains('failed to fetch') ||
+        str.contains('clientexception') ||
+        str.contains('socketexception') ||
+        str.contains('xmlhttprequest') ||
+        str.contains('connection refused') ||
+        str.contains('network is unreachable') ||
+        str.contains('timed out') ||
+        str.contains('handshakeexception');
+  }
+
+  /// Formats any auth or network error into plain, non-technical language.
+  static String formatAuthError(dynamic error) {
+    if (error is AuthException) {
+      final msg = error.message.trim();
+      if (msg.toLowerCase().contains('over_email_send_rate_limit') ||
+          msg.toLowerCase().contains('rate limit') ||
+          error.statusCode == '429') {
+        return 'Too many email requests. Please wait a few minutes and try again.';
+      }
+      if (msg.toLowerCase().contains('invalid login credentials')) {
+        return 'Incorrect email or password. Please try again or tap "Forgot Password?".';
+      }
+      return msg;
+    }
+    if (isNetworkError(error)) {
+      return 'Unable to connect to the server. Please check your internet connection and try again.';
+    }
+    final str = error.toString();
+    if (str.contains('over_email_send_rate_limit') ||
+        str.contains('rate limit') ||
+        str.contains('429')) {
+      return 'Too many email requests. Please wait a few minutes and try again.';
+    }
+    final authApiMatch = RegExp(r'message:\s*([^,\)]+)').firstMatch(str);
+    if (authApiMatch != null) {
+      final extracted = authApiMatch.group(1)!.trim();
+      if (extracted.toLowerCase().contains('invalid login credentials')) {
+        return 'Incorrect email or password. Please try again or tap "Forgot Password?".';
+      }
+      return extracted;
+    }
+    return str.replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
+  }
+
   /// Checks account existence and onboarding completion status by matching either email or phone.
   Future<AccountStatusResult> checkAccountAndOnboardingStatus(
     String identifier,
@@ -161,7 +207,12 @@ class AuthService {
             : (!isEmail ? clean : null),
         userId: userId,
       );
-    } catch (_) {
+    } catch (e) {
+      if (isNetworkError(e)) {
+        throw Exception(
+          'Unable to connect to the server. Please check your internet connection and try again.',
+        );
+      }
       return AccountStatusResult(
         hasAccount: false,
         onboardingCompleted: false,
@@ -501,6 +552,13 @@ class AuthService {
     await _client.auth.signInWithOtp(
       email: email.trim(),
       emailRedirectTo: SupabaseConfig.authCallbackUrl,
+    );
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    await _client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: SupabaseConfig.authCallbackUrl,
     );
   }
 

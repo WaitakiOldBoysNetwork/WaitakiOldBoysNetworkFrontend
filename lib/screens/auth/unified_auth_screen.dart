@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
@@ -9,6 +8,7 @@ import '../../services/unified_auth_service.dart';
 import '../home_navigation_screen.dart';
 import '../legal/legal_screens.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
+import 'auth_screen.dart';
 
 /// Unified Authentication Screen aligned with the single Phone number or Email entry
 /// and flowchart routing:
@@ -45,13 +45,15 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   void _routeToMainFeed() {
+    if (!mounted) return;
     if (widget.onAuthSuccess != null) {
       widget.onAuthSuccess!();
     } else {
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => const HomeNavigationScreen(initialIndex: 0),
         ),
+        (route) => false,
       );
     }
   }
@@ -112,7 +114,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Error checking account: $e');
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -158,8 +160,75 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final msg = e is AuthException ? e.message : e.toString();
-        SnackbarHelper.showError(context, msg);
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleMagicLink() async {
+    final input = (_resolvedEmail ?? _identifierController.text).trim();
+    if (input.isEmpty || !input.contains('@')) {
+      SnackbarHelper.showError(
+        context,
+        'No email address is linked to this phone number. Please sign in with your password or enter your email address.',
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.sendMagicLink(email: input);
+      if (mounted) {
+        await AuthScreen.showMagicLinkConfirmationDialog(
+          context,
+          input,
+          onResend: () => _authService.sendMagicLink(email: input),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final input = (_resolvedEmail ?? _identifierController.text).trim();
+    if (input.isEmpty || !input.contains('@')) {
+      SnackbarHelper.showError(
+        context,
+        'Please enter your email address so we can send you a password reset link.',
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      try {
+        await _authService.resetPassword(email: input);
+      } catch (_) {
+        await _authService.sendMagicLink(email: input);
+      }
+      if (mounted) {
+        await AuthScreen.showMagicLinkConfirmationDialog(
+          context,
+          input,
+          onResend: () async {
+            try {
+              await _authService.resetPassword(email: input);
+            } catch (_) {
+              await _authService.sendMagicLink(email: input);
+            }
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -168,6 +237,12 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final enteredText = _identifierController.text.trim();
+    final isPhoneEntered =
+        enteredText.isNotEmpty && !AuthService.isEmailInput(enteredText);
+    final hasResolvedEmail =
+        _resolvedEmail != null && _resolvedEmail!.contains('@');
+
     return ListenableBuilder(
       listenable: _unifiedAuthService,
       builder: (context, _) {
@@ -187,7 +262,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                     side: const BorderSide(color: AppColors.border),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(28),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -229,7 +304,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Old Boys Network • Qaunti Est Sapere',
+                            'Old Boys Network • Quanti Est Sapere',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12.5,
@@ -238,9 +313,19 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                               letterSpacing: 0.3,
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
 
                           if (!_showPasswordField) ...[
+                            const Text(
+                              'Sign in or create a new account using your phone number or email address.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: AppColors.textSecondary,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
                             TextFormField(
                               controller: _identifierController,
                               keyboardType: TextInputType.emailAddress,
@@ -286,13 +371,41 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
-                                    child: Text(
-                                      _identifierController.text.trim(),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                        color: AppColors.navyDark,
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            enteredText,
+                                            maxLines: 1,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              color: AppColors.navyDark,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isPhoneEntered &&
+                                            hasResolvedEmail) ...[
+                                          const SizedBox(height: 2),
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              'Account email: $_resolvedEmail',
+                                              maxLines: 1,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
                                   TextButton(
@@ -322,6 +435,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                 prefixIcon:
                                     const Icon(Icons.lock_outline, size: 20),
                                 suffixIcon: IconButton(
+                                  tooltip: _obscurePassword
+                                      ? 'Show password'
+                                      : 'Hide password',
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_off
@@ -341,7 +457,27 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 24),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed:
+                                    busy ? null : _handleForgotPassword,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                           ],
 
                           // Primary Action Button
@@ -372,7 +508,35 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
                                     ),
                                   ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 14),
+
+                          if (_showPasswordField && hasResolvedEmail) ...[
+                            OutlinedButton.icon(
+                              onPressed: busy ? null : _handleMagicLink,
+                              icon: const Icon(Icons.send_rounded, size: 16),
+                              label: Text(
+                                isPhoneEntered
+                                    ? 'Email Magic Link ($_resolvedEmail)'
+                                    : 'Send Me a Magic Link',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+
+                          Text(
+                            !_showPasswordField
+                                ? 'New here? Enter your phone number or email above and tap Continue to set up your profile.'
+                                : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           const Divider(height: 1),
                           const SizedBox(height: 12),
                           const LegalLinksFooter(),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/snackbar_helper.dart';
@@ -37,19 +36,18 @@ class AuthScreen extends StatefulWidget {
     BuildContext context,
     String email, {
     VoidCallback? onDismiss,
+    Future<void> Function()? onResend,
   }) {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => PopScope(
-        canPop: false,
-        child: MagicLinkConfirmationDialog(
-          email: email,
-          onDismiss: () {
-            Navigator.of(dialogContext).pop();
-            onDismiss?.call();
-          },
-        ),
+      barrierDismissible: true,
+      builder: (dialogContext) => MagicLinkConfirmationDialog(
+        email: email,
+        onResend: onResend,
+        onDismiss: () {
+          Navigator.of(dialogContext).pop();
+          onDismiss?.call();
+        },
       ),
     );
   }
@@ -116,10 +114,11 @@ class _AuthScreenState extends State<AuthScreen> {
               initialPhone: !isEmail ? input : status.phone,
               isNewAccount: true,
               onCompleted: () {
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                     builder: (_) => const HomeNavigationScreen(initialIndex: 0),
                   ),
+                  (route) => false,
                 );
               },
             ),
@@ -136,10 +135,11 @@ class _AuthScreenState extends State<AuthScreen> {
               initialStep: status.onboardingStep,
               isNewAccount: false,
               onCompleted: () {
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                     builder: (_) => const HomeNavigationScreen(initialIndex: 0),
                   ),
+                  (route) => false,
                 );
               },
             ),
@@ -154,7 +154,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Error checking account: $e');
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -182,10 +182,11 @@ class _AuthScreenState extends State<AuthScreen> {
         final isCompleted = await _authService.checkOnboardingCompleted(userId);
         if (!mounted) return;
         if (isCompleted) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (_) => const HomeNavigationScreen(initialIndex: 0),
             ),
+            (route) => false,
           );
         } else {
           final isEmail = AuthService.isEmailInput(input);
@@ -198,11 +199,12 @@ class _AuthScreenState extends State<AuthScreen> {
                 initialPhone: !isEmail ? input : null,
                 initialStep: step,
                 onCompleted: () {
-                  Navigator.of(context).pushReplacement(
+                  Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
                       builder: (_) =>
                           const HomeNavigationScreen(initialIndex: 0),
                     ),
+                    (route) => false,
                   );
                 },
               ),
@@ -212,24 +214,11 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, _parseAuthError(e));
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  String _parseAuthError(dynamic error) {
-    final str = error.toString();
-    if (str.contains('over_email_send_rate_limit') ||
-        str.contains('rate limit') ||
-        str.contains('429')) {
-      return 'Supabase email rate limit exceeded. The default test provider limits emails to ~3 per hour. Please wait a bit, or turn off "Confirm email" in Supabase settings for testing.';
-    }
-    if (error is AuthException) {
-      return error.message;
-    }
-    return str;
   }
 
   Future<void> _handleMagicLink() async {
@@ -237,7 +226,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (input.isEmpty || !input.contains('@')) {
       SnackbarHelper.showError(
         context,
-        'Please enter a valid email address first',
+        'No email address is linked to this phone number. Please sign in with your password or enter your email address.',
       );
       return;
     }
@@ -246,11 +235,54 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await _authService.sendMagicLink(email: input);
       if (mounted) {
-        await AuthScreen.showMagicLinkConfirmationDialog(context, input);
+        await AuthScreen.showMagicLinkConfirmationDialog(
+          context,
+          input,
+          onResend: () => _authService.sendMagicLink(email: input),
+        );
       }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, _parseAuthError(e));
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final input = (_resolvedEmail ?? _identifierController.text).trim();
+    if (input.isEmpty || !input.contains('@')) {
+      SnackbarHelper.showError(
+        context,
+        'Please enter your email address so we can send you a password reset link.',
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      try {
+        await _authService.resetPassword(email: input);
+      } catch (_) {
+        await _authService.sendMagicLink(email: input);
+      }
+      if (mounted) {
+        await AuthScreen.showMagicLinkConfirmationDialog(
+          context,
+          input,
+          onResend: () async {
+            try {
+              await _authService.resetPassword(email: input);
+            } catch (_) {
+              await _authService.sendMagicLink(email: input);
+            }
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -259,6 +291,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final enteredText = _identifierController.text.trim();
+    final isPhoneEntered =
+        enteredText.isNotEmpty && !AuthService.isEmailInput(enteredText);
+    final hasResolvedEmail =
+        _resolvedEmail != null && _resolvedEmail!.contains('@');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
@@ -272,7 +310,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 side: const BorderSide(color: AppColors.border),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(28),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -300,7 +338,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Old Boys Network • Qaunti Est Sapere',
+                        'Old Boys Network • Quanti Est Sapere',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
@@ -309,10 +347,20 @@ class _AuthScreenState extends State<AuthScreen> {
                           letterSpacing: 0.3,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 20),
 
                       // Single Phone Number or Email Input (when not yet verified)
                       if (!_showPasswordField) ...[
+                        const Text(
+                          'Sign in or create a new account using your phone number or email address.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: AppColors.textSecondary,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
                         TextFormField(
                           controller: _identifierController,
                           keyboardType: TextInputType.emailAddress,
@@ -320,14 +368,16 @@ class _AuthScreenState extends State<AuthScreen> {
                           onFieldSubmitted: (_) => _handleSubmit(),
                           decoration: const InputDecoration(
                             labelText: 'Phone Number or Email',
-                            hintText: 'e.g. 021 123 4567 or oldboy@waitakibhs.school.nz',
+                            hintText:
+                                'e.g. 021 123 4567 or oldboy@waitakibhs.school.nz',
                             prefixIcon: Icon(
                               Icons.contact_mail_outlined,
                               size: 20,
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || !AuthService.isValidEmailOrPhone(v)) {
+                            if (v == null ||
+                                !AuthService.isValidEmailOrPhone(v)) {
                               return 'Enter a valid phone number or email';
                             }
                             return null;
@@ -357,13 +407,39 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: Text(
-                                  _identifierController.text.trim(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    color: AppColors.navyDark,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        enteredText,
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                          color: AppColors.navyDark,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isPhoneEntered && hasResolvedEmail) ...[
+                                      const SizedBox(height: 2),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          'Account email: $_resolvedEmail',
+                                          maxLines: 1,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                               TextButton(
@@ -390,8 +466,12 @@ class _AuthScreenState extends State<AuthScreen> {
                           onFieldSubmitted: (_) => _handleSubmit(),
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                            prefixIcon:
+                                const Icon(Icons.lock_outline, size: 20),
                             suffixIcon: IconButton(
+                              tooltip: _obscurePassword
+                                  ? 'Show password'
+                                  : 'Hide password',
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_off
@@ -411,7 +491,27 @@ class _AuthScreenState extends State<AuthScreen> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed:
+                                _isLoading ? null : _handleForgotPassword,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                            ),
+                            child: const Text(
+                              'Forgot Password?',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                       ],
 
                       // Primary Continue / Log In Button
@@ -437,26 +537,34 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                               ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
 
-                      // Magic Link Option when an email is entered
-                      if (_showPasswordField &&
-                          (_resolvedEmail?.contains('@') ?? false)) ...[
+                      // Magic Link Option when an email is available
+                      if (_showPasswordField && hasResolvedEmail) ...[
                         OutlinedButton.icon(
                           onPressed: _isLoading ? null : _handleMagicLink,
                           icon: const Icon(Icons.send_rounded, size: 16),
-                          label: const Text('Send Me a Magic Link'),
+                          label: Text(
+                            isPhoneEntered
+                                ? 'Email Magic Link ($_resolvedEmail)'
+                                : 'Send Me a Magic Link',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                       ],
 
                       // Info text
-                      const Text(
-                        'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
+                      Text(
+                        !_showPasswordField
+                            ? 'New here? Enter your phone number or email above and tap Continue to set up your profile.'
+                            : 'Exclusively for Old Boys and staff of Waitaki Boys\' High School.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textMuted,
+                          height: 1.35,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -518,15 +626,15 @@ class EmailConfirmationDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Icon badge with WBHS Navy & Gold styling
               Container(
-                width: 78,
-                height: 78,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.navyPrimary, AppColors.navyDark],
@@ -545,12 +653,12 @@ class EmailConfirmationDialog extends StatelessWidget {
                 child: const Center(
                   child: Icon(
                     Icons.mark_email_read_rounded,
-                    size: 40,
+                    size: 36,
                     color: AppColors.goldAccent,
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Title
               const Text(
@@ -575,12 +683,13 @@ class EmailConfirmationDialog extends StatelessWidget {
                   height: 1.45,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
-              // Recipient email pill card
+              // Recipient email pill card (scales down cleanly on mobile without truncating)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.navyPrimary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -598,20 +707,23 @@ class EmailConfirmationDialog extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text(
-                        email,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.navyPrimary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          email,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navyPrimary,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // Steps checklist card
               Container(
@@ -631,12 +743,14 @@ class EmailConfirmationDialog extends StatelessWidget {
                     const SizedBox(height: 8),
                     _buildStepRow(
                       icon: Icons.filter_2_rounded,
-                      text: 'Click the verification link to activate your account.',
+                      text:
+                          'Click the verification link to activate your account.',
                     ),
                     const SizedBox(height: 8),
                     _buildStepRow(
                       icon: Icons.filter_3_rounded,
-                      text: 'Return to this app and sign in with your password.',
+                      text:
+                          'Return to this app and sign in with your password.',
                     ),
                     const Divider(height: 18, color: AppColors.border),
                     Row(
@@ -652,7 +766,8 @@ class EmailConfirmationDialog extends StatelessWidget {
                             'Don’t see it? Please check your Spam or Junk folder.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary.withValues(alpha: 0.9),
+                              color: AppColors.textSecondary
+                                  .withValues(alpha: 0.9),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -662,7 +777,7 @@ class EmailConfirmationDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
               // Dismiss button
               SizedBox(
@@ -697,15 +812,49 @@ class EmailConfirmationDialog extends StatelessWidget {
 }
 
 /// Modal dialog alerting user that a password-free magic link has been sent.
-class MagicLinkConfirmationDialog extends StatelessWidget {
+class MagicLinkConfirmationDialog extends StatefulWidget {
   final String email;
   final VoidCallback? onDismiss;
+  final Future<void> Function()? onResend;
 
   const MagicLinkConfirmationDialog({
     super.key,
     required this.email,
     this.onDismiss,
+    this.onResend,
   });
+
+  @override
+  State<MagicLinkConfirmationDialog> createState() =>
+      _MagicLinkConfirmationDialogState();
+}
+
+class _MagicLinkConfirmationDialogState
+    extends State<MagicLinkConfirmationDialog> {
+  bool _isResending = false;
+  bool _resentSuccess = false;
+
+  Future<void> _handleResend() async {
+    if (widget.onResend == null || _isResending) return;
+    setState(() {
+      _isResending = true;
+      _resentSuccess = false;
+    });
+    try {
+      await widget.onResend!();
+      if (mounted) {
+        setState(() => _resentSuccess = true);
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarHelper.showError(context, AuthService.formatAuthError(e));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isResending = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -718,13 +867,13 @@ class MagicLinkConfirmationDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 78,
-                height: 78,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.navyPrimary, AppColors.navyDark],
@@ -743,12 +892,12 @@ class MagicLinkConfirmationDialog extends StatelessWidget {
                 child: const Center(
                   child: Icon(
                     Icons.send_rounded,
-                    size: 38,
+                    size: 34,
                     color: AppColors.goldAccent,
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               const Text(
                 'Magic Link Sent',
                 style: TextStyle(
@@ -769,10 +918,11 @@ class MagicLinkConfirmationDialog extends StatelessWidget {
                   height: 1.45,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.navyPrimary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -790,25 +940,81 @@ class MagicLinkConfirmationDialog extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Text(
-                        email,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.navyPrimary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.email,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navyPrimary,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: AppColors.goldDark,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _resentSuccess
+                            ? 'A new sign-in link has been sent to your inbox!'
+                            : 'Don’t see it? Please check your Spam or Junk folder.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _resentSuccess
+                              ? AppColors.success
+                              : AppColors.textSecondary.withValues(alpha: 0.9),
+                          fontWeight: _resentSuccess
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.onResend != null) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: _isResending ? null : _handleResend,
+                  icon: _isResending
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 16),
+                  label: Text(
+                    _isResending ? 'Sending...' : 'Resend Magic Link',
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: onDismiss ?? () => Navigator.of(context).pop(),
+                  onPressed:
+                      widget.onDismiss ?? () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.navyPrimary,
                     foregroundColor: Colors.white,

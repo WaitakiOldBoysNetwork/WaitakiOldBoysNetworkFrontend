@@ -54,6 +54,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialProfile != oldWidget.initialProfile ||
+        widget.userId != oldWidget.userId) {
+      if (widget.initialProfile != null) {
+        _profile = widget.initialProfile;
+        _isLoading = false;
+      }
+      _loadProfile();
+    }
+  }
+
   Future<void> _loadProfile() async {
     final targetId = widget.userId ?? widget.initialProfile?.userId ?? widget.initialProfile?.id;
 

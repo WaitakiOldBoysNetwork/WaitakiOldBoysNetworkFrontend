@@ -68,8 +68,18 @@ class SupabaseConfig {
   );
 
   /// Authentication callback / redirect URL for OAuth, Email Confirmation, and Magic Links.
-  /// Strictly points to production GitHub Pages URL to prevent localhost redirect leaks.
-  static String get authCallbackUrl => productionWebUrl;
+  /// Uses the current web origin when running in a browser, falling back to productionWebUrl.
+  static String get authCallbackUrl {
+    if (kIsWeb) {
+      try {
+        final base = Uri.base;
+        if (base.scheme == 'http' || base.scheme == 'https') {
+          return '${base.origin}${base.path}';
+        }
+      } catch (_) {}
+    }
+    return productionWebUrl;
+  }
 
   /// Load persisted credentials from SharedPreferences, with support for Web URL query parameter overrides
   static Future<void> loadPersisted() async {

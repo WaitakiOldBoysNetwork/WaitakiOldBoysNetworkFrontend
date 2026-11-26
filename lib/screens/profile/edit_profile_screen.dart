@@ -566,12 +566,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceMuted,
+                  Material(
+                    color: AppColors.surfaceMuted,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      side: const BorderSide(color: AppColors.border),
                     ),
+                    clipBehavior: Clip.antiAlias,
                     child: SwitchListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,

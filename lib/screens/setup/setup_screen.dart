@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/supabase_config.dart';
 import '../../core/utils/snackbar_helper.dart';
+import '../../services/auth_service.dart';
 import '../../services/supabase_service.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -14,9 +15,15 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
+  static const String _defaultWaitakiUrl =
+      'https://qehluoctztbjgtijhjir.supabase.co';
+  static const String _defaultWaitakiKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlaGx1b2N0enRiamd0aWpoamlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2MTk4NjUsImV4cCI6MjEwODE5NTg2NX0.BmLMMLDYZqHIjHGLOnuVvkXcTYzrgz_oI7-_J0jxp3c';
+
   final _urlController = TextEditingController();
   final _keyController = TextEditingController();
   bool _isSaving = false;
+  bool _obscureKey = true;
 
   @override
   void initState() {
@@ -24,10 +31,11 @@ class _SetupScreenState extends State<SetupScreen> {
     _urlController.text = SupabaseConfig.url.contains('your-project-ref')
         ? ''
         : SupabaseConfig.url;
-    _keyController.text = (SupabaseConfig.publishableKey.contains('your-publishable-key') ||
-            SupabaseConfig.publishableKey.contains('your-anon-key'))
-        ? ''
-        : SupabaseConfig.publishableKey;
+    _keyController.text =
+        (SupabaseConfig.publishableKey.contains('your-publishable-key') ||
+                SupabaseConfig.publishableKey.contains('your-anon-key'))
+            ? ''
+            : SupabaseConfig.publishableKey;
   }
 
   @override
@@ -41,14 +49,21 @@ class _SetupScreenState extends State<SetupScreen> {
     final url = _urlController.text.trim();
     final key = _keyController.text.trim();
 
-    if (url.isEmpty || !url.startsWith('http')) {
-      SnackbarHelper.showError(context, 'Please enter a valid Supabase URL');
+    final parsedUri = Uri.tryParse(url);
+    if (url.isEmpty ||
+        parsedUri == null ||
+        !(parsedUri.scheme == 'http' || parsedUri.scheme == 'https') ||
+        parsedUri.host.isEmpty) {
+      SnackbarHelper.showError(
+        context,
+        'Please enter a valid server address starting with https:// or http://',
+      );
       return;
     }
     if (key.isEmpty) {
       SnackbarHelper.showError(
         context,
-        'Please enter your Supabase publishable key (e.g. sb_publishable_...)',
+        'Please enter your server access key',
       );
       return;
     }
@@ -60,14 +75,29 @@ class _SetupScreenState extends State<SetupScreen> {
         publishableKey: key,
         anonKey: key,
       );
-      widget.onConfigured();
+
+      // Verify connectivity before leaving SetupScreen
+      await SupabaseService.client.from('profiles').select('id').limit(1);
+
+      if (mounted) {
+        widget.onConfigured();
+      }
     } catch (e) {
       if (mounted) {
-        SnackbarHelper.showError(context, 'Failed to connect: $e');
+        final msg = AuthService.isNetworkError(e)
+            ? 'Unable to reach the server at $url. Please check the server address and your internet connection.'
+            : 'Connection failed: ${AuthService.formatAuthError(e)}';
+        SnackbarHelper.showError(context, msg);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _handleUseDefaultServer() async {
+    _urlController.text = _defaultWaitakiUrl;
+    _keyController.text = _defaultWaitakiKey;
+    await _handleConnect();
   }
 
   @override
@@ -76,9 +106,9 @@ class _SetupScreenState extends State<SetupScreen> {
       backgroundColor: AppColors.background,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: 480),
             child: Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -86,7 +116,7 @@ class _SetupScreenState extends State<SetupScreen> {
                 side: const BorderSide(color: AppColors.border),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,15 +131,15 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                       child: const Center(
                         child: Icon(
-                          Icons.dns_rounded,
+                          Icons.cloud_done_outlined,
                           color: AppColors.navyPrimary,
                           size: 32,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     const Text(
-                      'Connect Your Supabase Backend',
+                      'Server Connection Setup',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22,
@@ -119,7 +149,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Paste your Supabase project credentials below to connect the Old Boys network frontend to your database.',
+                      'Enter your server address and access key to connect to the Waitaki Old Boys Network.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -127,11 +157,11 @@ class _SetupScreenState extends State<SetupScreen> {
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    // Inputs
+                    // Server Address Input
                     const Text(
-                      'Project URL',
+                      'Server Address (URL)',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -140,52 +170,44 @@ class _SetupScreenState extends State<SetupScreen> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: _urlController,
+                      keyboardType: TextInputType.url,
                       decoration: const InputDecoration(
-                        hintText: 'https://xyzcompany.supabase.co',
+                        hintText: 'https://your-server.supabase.co',
                         prefixIcon: Icon(Icons.link, size: 20),
                       ),
                     ),
                     const SizedBox(height: 18),
 
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        const Text(
-                          'Publishable API Key',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.navyPrimary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'sb_publishable_...',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.navyPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
+                    // Access Key Input with Show/Hide toggle
+                    const Text(
+                      'Access Key',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: _keyController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'sb_publishable_... (or legacy anon key)',
-                        prefixIcon: Icon(Icons.key, size: 20),
+                      obscureText: _obscureKey,
+                      decoration: InputDecoration(
+                        hintText: 'Paste your server access key',
+                        prefixIcon: const Icon(Icons.key, size: 20),
+                        suffixIcon: IconButton(
+                          tooltip: _obscureKey
+                              ? 'Show access key'
+                              : 'Hide access key',
+                          icon: Icon(
+                            _obscureKey
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            size: 20,
+                            color: AppColors.textMuted,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureKey = !_obscureKey,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -193,7 +215,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     ElevatedButton(
                       onPressed: _isSaving ? null : _handleConnect,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       child: _isSaving
                           ? const SizedBox(
@@ -212,14 +234,22 @@ class _SetupScreenState extends State<SetupScreen> {
                               ),
                             ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+
+                    TextButton.icon(
+                      onPressed: _isSaving ? null : _handleUseDefaultServer,
+                      icon: const Icon(Icons.restore_rounded, size: 18),
+                      label: const Text('Use Default Waitaki Server'),
+                    ),
+                    const SizedBox(height: 12),
 
                     const Text(
-                      'Tip: You can also define these in lib/core/constants/supabase_config.dart or via --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_PUBLISHABLE_KEY=...',
+                      'Need help connecting? Please contact your Waitaki Old Boys Network administrator.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textMuted,
+                        height: 1.35,
                       ),
                     ),
                   ],
